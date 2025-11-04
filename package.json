@@ -1,0 +1,8 @@
+{
+  "name": "chess-project-lesson",
+  "version": "1.0.0",
+  "description": "A simple static chess lesson site.",
+  "scripts": {
+    "start": "echo 'Starting static site...' && exit 0"
+  }
+}
