@@ -15,23 +15,23 @@
     <div class="main-container">
 
         <div class="chessboard-area">
-            <h2>체스보드</h2>
             <div id="board"></div>
         </div>
 
         <div class="right-panel">
 
             <div id="feedback-panel" class="panel-section">
-                정답/오답
                 <p id="feedback-message">레슨이 준비되었습니다.</p>
             </div>
 
             <div id="content-panel" class="panel-section">
                 <h3>레슨 내용</h3>
-                <p id="lesson-description"></p>
+                <div id="lesson-description"></div>
+                
                 <button onclick="toggleHint()">힌트 보기</button>
                 <p id="hint-text" style="color: gray; display: none; margin-top: 10px;"></p>
-            </div>
+                
+                </div>
         </div>
     </div>
 
