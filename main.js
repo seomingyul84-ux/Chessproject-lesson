@@ -5,7 +5,7 @@ var board = null;
 var game = new Chess(); 
 var $feedbackPanel = $('#feedback-panel');
 var $status = $('#feedback-message');
-var $lessonTitle = $('.chessboard-area h2'); 
+// var $lessonTitle = $('.chessboard-area h2'); <-- 안전을 위해 초기 캐싱 제거
 var $lessonDesc = $('#lesson-description');
 var $hintText = $('#hint-text');
 var $contentPanel = $('#content-panel');
@@ -25,7 +25,7 @@ function updateStepContent() {
     // 현재 단계 정의
     currentStep = currentLesson.steps[currentStepIndex];
 
-    // 레슨 제목/단계 제목 설정
+    // 레슨 제목/단계 제목 설정 (h2는 필요할 때마다 선택자를 통해 접근)
     $('.chessboard-area h2').text(`[${currentStepIndex + 1}/${currentLesson.steps.length}] ${currentLesson.title} - ${currentStep.title}`);
     
     // HTML 내용을 innerHTML로 설정
@@ -46,7 +46,8 @@ function updateStepContent() {
     if (board) {
         board.destroy();
     }
-    board = Chessboard('board', config);
+    // !! id="board"를 찾아 체스보드를 그립니다. !!
+    board = Chessboard('board', config); 
     game = new Chess(currentStep.fen); // 현재 단계 FEN으로 게임 초기화
     
     // '다음 단계로 이동' 버튼 추가/업데이트
@@ -68,11 +69,10 @@ function onDrop (source, target) {
             
             if (move === null) return 'snapback'; 
 
-            // 정답 피드백 및 다음 단계로 이동
+            // 정답 피드백 및 다음 단계로 자동 이동
             $feedbackPanel.removeClass('feedback-incorrect').addClass('feedback-correct');
             $status.html('정답입니다! 다음 단계로 이동하세요.');
             
-            // 0.5초 후 다음 단계로 자동 이동
             setTimeout(loadNextStep, 500); 
             
             return; 
@@ -80,19 +80,17 @@ function onDrop (source, target) {
         } else {
             // 정답이 아닌 경우: 다른 유효한 수라도 오답 처리
             $feedbackPanel.addClass('feedback-incorrect').removeClass('feedback-correct');
-            $status.html('아닙니다. 다른 행마를 시도하여 체크메이트를 찾아보세요.');
+            $status.html('아닙니다. 다른 행마를 시도하여 정답을 찾아보세요.');
             
-            // 유효성 검사 없이 무조건 snapback (다시 시도하게 함)
-            return 'snapback';
+            return 'snapback'; // 무조건 snapback (다시 시도하게 함)
         }
     }
 
     // 2. 일반 이론 모드 (expectedMove가 없는 경우)
-    // promotion: 'q'를 기본으로 설정하여 프로모션을 퀸으로 자동 처리
     var move = game.move({ from: source, to: target, promotion: 'q' }); 
     if (move === null) return 'snapback'; // 유효하지 않으면 되돌리기
     
-    // 유효한 수일 경우 (앙파상, 캐슬링 포함) 피드백 메시지 업데이트
+    // 유효한 수일 경우 피드백 메시지 업데이트
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
     $status.html(`성공적으로 수를 두었습니다: ${move.san}. 다른 행마도 테스트해보세요.`);
     return; 
@@ -104,33 +102,29 @@ function loadNextStep() {
     currentStepIndex++;
     
     if (currentStepIndex < currentLesson.steps.length) {
-        // 다음 세부 단계가 남아있다면 로드
         updateStepContent(); 
     } else {
-        // 모든 세부 단계를 완료했다면
         alert('레슨 1의 모든 단계를 완료했습니다! 감사합니다.');
-        // 완료 후 처음으로 돌아가기
         currentStepIndex = 0; 
         updateStepContent();
     }
 }
-
+ 
 // 6. 힌트 보기 기능
 function toggleHint() {
     $hintText.slideToggle();
 }
 
-// 7. 기물 스냅백 방지 (유효하지 않은 수일 경우 onDrop에서 처리)
+// 7. 기물 스냅백 방지
 function onSnapEnd () {
     board.position(game.fen());
 }
 
 // 8. 초기화 및 이벤트 리스너 설정
 $(document).ready(function() {
-    // <h2> 태그가 index.html에 없으면 추가합니다.
+    // <h2> 태그가 없으면 동적으로 생성
     if ($('.chessboard-area h2').length === 0) {
         $('.chessboard-area').prepend('<h2></h2>');
-        $lessonTitle = $('.chessboard-area h2');
     }
     updateStepContent(); // 첫 단계 로드
     $(window).on('resize', board.resize);
