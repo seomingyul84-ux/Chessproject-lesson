@@ -143,10 +143,10 @@ const LESSON_DATA = [
             // 12단계: 용어 정리 (1) - 체크 및 스테일메이트 (퍼즐)
             {
                 stepId: '1.0.3.A',
-                title: "12단계: 용어 정리 (1) - 체크메이트 테스트",
-                fen: 'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', 
+                title: "12단계: 용어 정리 (1) - 체크메이트 테스트,
+                fen: 'rnbqkbnr/pppp1ppp/8/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 2', 
                 description: `
-                    <p>⭐ 체크메이트는 킹이 잡힐 상황을 피할 수 없을 때 발생하며, 게임이 즉시 종료됩니다. 흰색 퀸(H5)을 F7 폰이 있는 곳으로 움직여 **체크메이트**를 시도해보세요.</p>
+                    <p>⭐ 체크메이트는 킹이 잡힐 상황을 피할 수 없을 때 발생하며, 게임이 즉시 종료됩니다. 흰색 퀸(H5)을 F7 폰이 있는 곳으로 움직여 체크메이트를 시도해보세요.</p>
                 `,
                 hint: '흰색 퀸을 f7로 움직여 킹이 잡힐 수 없는 상태가 되는지 확인하세요. (Qxf7#)',
                 expectedMove: { from: 'h5', to: 'f7' } // 정답 행마
