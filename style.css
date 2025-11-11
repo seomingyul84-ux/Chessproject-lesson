@@ -7,17 +7,35 @@ body {
     padding: 0;
     background-color: #f4f4f9;
     color: #333;
+    /* body 자체는 가운데 정렬을 위해 flex 사용 */
     display: flex;
     justify-content: center;
 }
 
-#main-container {
-    display: flex; /* <-- 항상 가로 레이아웃 유지 */
+/* 전체 콘텐츠를 감싸는 컨테이너 */
+.container {
     width: 90%;
     max-width: 1200px;
+}
+
+/* 메인 콘텐츠 영역: 체스보드와 레슨 내용을 좌우로 분할 */
+#main-container {
+    display: flex; /* <-- 가로 분할의 핵심 */
+    width: 100%; /* 부모 컨테이너의 너비 사용 */
     margin-top: 20px;
     gap: 30px;
-    /* flex-direction: column; 설정이 제거되어 기본값 (row)이 유지됩니다. */
+    /* flex-direction: column; 설정이 없으므로 기본값 (row)이 유지됩니다. */
+}
+
+/* 홈 버튼 스타일 */
+.home-button {
+    display: inline-block;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    text-decoration: none;
+    background-color: #5bc0de;
+    color: white;
+    border-radius: 5px;
 }
 
 /* ========================================= */
@@ -148,14 +166,12 @@ body {
 
 /* 1. 선택된 기물 칸 강조 (Source Square) */
 .highlight-source {
-    /* 기물 선택 시 칸 주변에 주황색 테두리 그림자를 추가하여 강조합니다. */
     box-shadow: inset 0 0 10px #f68b37 !important; 
     z-index: 5;
 }
 
 /* 2. 합법적인 이동 가능 칸 강조 (Target Squares: 점 표시) */
 .highlight-target {
-    /* 가상 요소(::after)를 사용하여 점을 표시하기 위해 position: relative 설정 */
     position: relative;
 }
 
@@ -167,16 +183,13 @@ body {
     top: 50%;
     left: 50%;
     
-    /* 점의 크기 (원의 지름) */
     width: 15px; 
     height: 15px; 
     
-    /* 중앙 정렬을 위한 마진 설정 (크기의 절반) */
     margin-top: -7.5px; 
     margin-left: -7.5px; 
     
-    border-radius: 50%; /* 원 모양 */
-    /* 점의 색상: 연두색 계열로 설정하여 눈에 띄게 합니다. */
+    border-radius: 50%; 
     background-color: rgba(60, 179, 113, 0.7); 
     
     z-index: 10;
