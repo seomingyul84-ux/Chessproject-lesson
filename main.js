@@ -35,7 +35,6 @@ function highlightSquare (square, isTarget = false) {
     
     if (isTarget) {
         // 이동 가능 칸인 경우 실제 DOM 요소를 삽입합니다.
-        // 이는 ::after가 보이지 않는 충돌 문제를 해결하기 위함입니다.
         if($square.find('.move-dot').length === 0) { // 중복 삽입 방지
              $square.append('<div class="move-dot"></div>');
         }
@@ -193,8 +192,8 @@ function updateStepContent() {
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
-    removeHighlights(); // ⭐ 추가: 매 단계 로드 시 기존 하이라이트 제거
-    squareToHighlight = null; // ⭐ 추가: 선택 상태 초기화
+    removeHighlights(); // 매 단계 로드 시 기존 하이라이트 제거
+    squareToHighlight = null; // 선택 상태 초기화
 
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
     $hintText.slideUp();
@@ -209,8 +208,7 @@ function updateStepContent() {
     board = Chessboard('board', config);
     game = new Chess(currentStep.fen); 
     
-    // ... (이하 동일)
-    // 다음 단계 버튼 초기화 및 상태 메시지 설정 로직
+    // 다음 단계 버튼 초기화
     $('#next-step-btn').hide(); 
     
     let defaultStatusMessage = '체스보드에서 행마를 테스트하고 다음 단계로 이동하세요.';
@@ -249,11 +247,12 @@ $(document).ready(function() {
     
     $('#board').off('click', '.square-55d63').on('click', '.square-55d63', function() {
         
-        if (board) {
-            var square = board.getSquare(this);
+        // ⭐ 오류 해결: board.getSquare 대신 Chessboard.getSquare 정적 함수 사용 재시도
+        if (typeof Chessboard.getSquare === 'function') {
+            var square = Chessboard.getSquare(this);
             handleSquareClick(square);
         } else {
-            console.error("Board instance is not initialized.");
+            console.error("Chessboard.getSquare is not available. Check library load.");
         }
     });
 
