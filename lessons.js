@@ -120,7 +120,7 @@ const LESSON_DATA = [
                 stepId: '1.3.1',
                 title: "8단계 (1): 비숍 (Bishop, B, 3점) - 밝은 칸 대각선 끝까지",
                 fen: '8/8/8/8/8/8/8/B7 w - - 0 1', 
-                description: `<p>비숍은 대각선으로 움직입니다. A1 (밝은 칸)에 있는 비숍을 보드의 가장 먼 칸인 H8로 이동시켜 보세요.</p>`,
+                description: `<p>비숍은 대각선으로 움직입니다. A1 (어두운 칸)에 있는 비숍을 보드의 가장 먼 칸인 H8로 이동시켜 보세요.</p>`,
                 hint: '가장 긴 밝은 칸 대각선을 따라 이동합니다.',
                 expectedMove: { from: 'a1', to: 'h8' }
             },
@@ -137,10 +137,10 @@ const LESSON_DATA = [
             {
                 stepId: '1.3.3',
                 title: "9단계: 비숍 (Bishop, B, 3점) - 기물 잡기",
-                fen: '8/8/8/3p4/8/8/2B5/8 w - - 0 1', 
-                description: `<p>C2 비숍을 움직여 D5 폰을 잡으세요.</p>`,
+                fen: '8/8/8/3p4/8/1B6/8/8 w - - 0 1', 
+                description: `<p>b3 비숍을 움직여 D5 폰을 잡으세요.</p>`,
                 hint: '비숍은 대각선 경로가 막혀 있지 않아야 합니다. C2에서 D5로 가세요. (기보 표기: Bxd5)',
-                expectedMove: { from: 'c2', to: 'd5' }
+                expectedMove: { from: 'b3', to: 'd5' }
             },
 
             // 10단계: 룩의 행마 (예시 2개)
