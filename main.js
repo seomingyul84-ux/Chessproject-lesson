@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 라이브러리 함수 직접 추출)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 좌표 추출 로직 수정)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -29,16 +29,21 @@ function onDragStart (source, piece, position, orientation) {
     return false; 
 }
 
-// ⭐️ 새로운 함수: DOM 클래스에서 직접 좌표를 추출하여 라이브러리 의존성 제거
+// ⭐️ 최종 수정 함수: DOM 클래스에서 좌표를 확실하게 추출
 function getSquareFromDOM(element) {
-    // 클릭된 DOM 요소의 클래스 목록에서 'square-'로 시작하는 클래스를 찾습니다.
     var classList = $(element).attr('class').split(' ');
     for (var i = 0; i < classList.length; i++) {
         var className = classList[i];
-        // 'square-55d63'와 'square-e2' 같은 클래스를 모두 포함하므로, 
-        // 하이픈 이후에 좌표(두 글자)가 오는 클래스를 찾습니다.
-        if (className.length === 8 && className.substring(0, 7) === 'square-') {
-            return className.substring(7); // 'e2'와 같은 좌표만 반환
+        
+        // 'square-'로 시작하는 클래스만 필터링
+        if (className.substring(0, 7) === 'square-') {
+            var square = className.substring(7); 
+            
+            // 좌표는 반드시 두 글자(예: 'a1', 'h8')여야 합니다. 
+            // 'square-55d63'와 같은 ID 클래스를 제외하기 위함입니다.
+            if (square.length === 2 && square.match(/^[a-h][1-8]$/)) { 
+                return square; 
+            }
         }
     }
     return null; 
@@ -266,7 +271,7 @@ $(document).ready(function() {
         // ⭐ 디버깅 코드: 클릭 이벤트가 발동됨을 확인
         console.log("✅ Square Click Event Fired!");
         
-        // ⭐️ Chessboard.getSquare 대신 직접 구현한 함수 사용
+        // ⭐️ getSquareFromDOM 함수 사용
         var square = getSquareFromDOM(this);
 
         if (square) {
