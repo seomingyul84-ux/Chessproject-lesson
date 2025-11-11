@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 클린업 로직 보강)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 클린업 지연 적용)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -70,7 +70,7 @@ function removeHighlights () {
     $('#board .square').removeClass('highlight-source highlight-target'); 
     
     // 2. 삽입된 점 요소 제거 (.move-dot)
-    // ⭐️ 보강된 로직: 모든 .square 요소 내부의 .move-dot을 찾아 확실하게 제거
+    // 보강된 로직: 모든 .square 요소 내부의 .move-dot을 찾아 확실하게 제거
     $('#board .square').each(function() {
         $(this).find('.move-dot').remove();
     });
@@ -119,7 +119,9 @@ function handleSquareClick(square) {
                 board.move(source + '-' + target); 
                 squareToHighlight = null; 
             }
-            removeHighlights(); 
+            
+            // ⭐️ 클린업 지연 적용
+            setTimeout(removeHighlights, 100); 
             return; 
         }
         
@@ -141,7 +143,10 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
         board.move(source + '-' + target);
-        removeHighlights(); // 이동 완료 후 클린업 호출
+        
+        // ⭐️ 클린업 지연 적용
+        setTimeout(removeHighlights, 100); 
+        
         squareToHighlight = null; 
         
         $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
