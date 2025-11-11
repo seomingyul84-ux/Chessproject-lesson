@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 라이브러리 함수 직접 추출)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -22,11 +22,26 @@ var config = {
 };
 
 // =========================================================
-// === 3. 이벤트 핸들러 함수 (클릭 기반 이동 및 해제 로직) ===
+// === 3. 이벤트 핸들러 함수 및 유틸리티 ===
 // =========================================================
 
 function onDragStart (source, piece, position, orientation) {
     return false; 
+}
+
+// ⭐️ 새로운 함수: DOM 클래스에서 직접 좌표를 추출하여 라이브러리 의존성 제거
+function getSquareFromDOM(element) {
+    // 클릭된 DOM 요소의 클래스 목록에서 'square-'로 시작하는 클래스를 찾습니다.
+    var classList = $(element).attr('class').split(' ');
+    for (var i = 0; i < classList.length; i++) {
+        var className = classList[i];
+        // 'square-55d63'와 'square-e2' 같은 클래스를 모두 포함하므로, 
+        // 하이픈 이후에 좌표(두 글자)가 오는 클래스를 찾습니다.
+        if (className.length === 8 && className.substring(0, 7) === 'square-') {
+            return className.substring(7); // 'e2'와 같은 좌표만 반환
+        }
+    }
+    return null; 
 }
 
 // highlightSquare 함수: .move-dot을 삽입하여 점 표시
@@ -245,20 +260,20 @@ $(document).ready(function() {
     
     updateStepContent(); // 첫 단계 로드
     
-    // ⭐️ 최종 안정화 수정: document에 이벤트 위임을 사용하여 보드가 재로드되어도 클릭이 작동하도록 보장
+    // ⭐️ 최종 안정화: document에 이벤트 위임을 사용하여 보드가 재로드되어도 클릭이 작동하도록 보장
     $(document).off('click', '#board .square-55d63').on('click', '#board .square-55d63', function() {
         
-        // ⭐ 디버깅 코드: 클릭이 성공적으로 처리되었는지 콘솔에서 확인
+        // ⭐ 디버깅 코드: 클릭 이벤트가 발동됨을 확인
         console.log("✅ Square Click Event Fired!");
         
-        // TypeError 해결: board.getSquare 대신 Chessboard.getSquare 정적 함수 사용
-        if (typeof Chessboard.getSquare === 'function') {
-            var square = Chessboard.getSquare(this);
+        // ⭐️ Chessboard.getSquare 대신 직접 구현한 함수 사용
+        var square = getSquareFromDOM(this);
+
+        if (square) {
             handleSquareClick(square);
-            
             console.log("Processed square:", square); 
         } else {
-            console.error("Critical Error: Chessboard.getSquare function is missing.");
+            console.error("Critical Error: Failed to determine square from DOM. (Check getSquareFromDOM logic)");
         }
     });
 
