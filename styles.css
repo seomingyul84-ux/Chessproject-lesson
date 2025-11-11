@@ -156,35 +156,31 @@ body {
 }
 
 /* ========================================= */
-/* 4. 체스보드 행마 표시 하이라이트 (점 표시 문제 해결) */
+/* 4. 체스보드 행마 표시 하이라이트 (move-dot 사용) */
 /* ========================================= */
 
 .highlight-source {
+    /* 선택된 기물 칸 하이라이트 */
     box-shadow: inset 0 0 10px #f68b37 !important; 
     z-index: 5 !important;
 }
 
-.highlight-target {
-    position: relative !important; 
-    z-index: 5 !important; /* 우선순위 강제 조정 */
-}
-
-/* 점 (Dot) 자체의 스타일 */
-.highlight-target::after {
-    content: '' !important; /* !important 추가 */
-    display: block !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
+/* 🎯 main.js에서 삽입하는 점 요소 (.move-dot)의 스타일 */
+.move-dot {
+    /* 폰 이미지 위에 확실히 보이도록 z-index를 높입니다. */
+    z-index: 100 !important; 
+    position: absolute;
+    top: 50%;
+    left: 50%;
     
-    width: 15px !important; 
-    height: 15px !important; 
+    /* 점의 크기 */
+    width: 15px; 
+    height: 15px; 
     
-    margin-top: -7.5px !important; 
-    margin-left: -7.5px !important; 
+    /* 중앙 정렬 */
+    margin-top: -7.5px; 
+    margin-left: -7.5px; 
     
-    border-radius: 50% !important; 
-    background-color: rgba(60, 179, 113, 0.7) !important; 
-    
-    z-index: 10 !important; 
+    border-radius: 50%; /* 원 모양 */
+    background-color: rgba(60, 179, 113, 0.7); /* 색상 */
 }
