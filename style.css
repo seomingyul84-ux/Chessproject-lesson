@@ -12,11 +12,12 @@ body {
 }
 
 #main-container {
-    display: flex;
+    display: flex; /* <-- 항상 가로 레이아웃 유지 */
     width: 90%;
     max-width: 1200px;
     margin-top: 20px;
     gap: 30px;
+    /* flex-direction: column; 설정이 제거되어 기본값 (row)이 유지됩니다. */
 }
 
 /* ========================================= */
@@ -43,7 +44,6 @@ body {
 #board {
     width: 100%;
     max-width: 500px; /* 체스보드 최대 크기 제한 */
-    /* chessboard.js가 인라인 스타일로 크기를 지정하지만, 최대 크기 지정 */
 }
 
 /* ========================================= */
@@ -180,23 +180,4 @@ body {
     background-color: rgba(60, 179, 113, 0.7); 
     
     z-index: 10;
-}
-
-
-/* ========================================= */
-/* 5. 반응형 디자인 */
-/* ========================================= */
-    #main-container {
-        flex-direction: column;
-        width: 95%;
-    }
-    
-    .chessboard-area {
-        flex-basis: auto;
-    }
-    
-    .lesson-content {
-        flex-basis: auto;
-        margin-top: 20px;
-    }
 }
