@@ -5,39 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>체스 레슨</title>
 
-    <link rel="stylesheet" href="lib/chessboard.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="lib/chessboard.min.css"> 
+    
+    <link rel="stylesheet" href="styles.css"> 
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="lib/chess.min.js"></script>
+    <script src="lib/chessboard-1.0.0.min.js"></script>
 </head>
 <body>
-
-    <a href="/" class="home-button">홈</a>
-
-    <div class="main-container">
-
-        <div class="chessboard-area">
-            <div id="board"></div>
-        </div>
-
-        <div class="right-panel">
-
-            <div id="feedback-panel" class="panel-section">
-                <p id="feedback-message">레슨이 준비되었습니다.</p>
+    <div class="container">
+        <a href="/" class="home-button">홈</a> 
+        
+        <div id="main-container">
+            
+            <div class="chessboard-area">
+                <div id="board" style="width: 500px"></div> 
             </div>
 
-            <div id="content-panel" class="panel-section">
-                <h3>레슨 내용</h3>
-                <div id="lesson-description"></div>
-                
-                <button onclick="toggleHint()">힌트 보기</button>
-                <p id="hint-text" style="color: gray; display: none; margin-top: 10px;"></p>
-                
+            <div class="lesson-content">
+                <div id="feedback-panel">
+                    <div id="feedback-message"></div>
                 </div>
+                
+                <div id="content-panel">
+                    <div id="lesson-description"></div>
+                    
+                    <div class="hint-container">
+                        <button id="toggle-hint-btn" onclick="toggleHint()">힌트 보기</button>
+                        <p id="hint-text" style="display: none;"></p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
-    <script src="lib/jquery-3.5.1.min.js"></script>
-    <script src="lib/chessboard-1.0.0.min.js"></script>
-    <script src="lib/chess.min.js"></script>
 
     <script src="lessons.js"></script>
     <script src="main.js"></script>
