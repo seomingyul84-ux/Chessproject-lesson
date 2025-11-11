@@ -1,11 +1,10 @@
-// main.js 파일 내용
+// main.js 파일 전체 코드
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
 var game = new Chess(); 
 var $feedbackPanel = $('#feedback-panel');
 var $status = $('#feedback-message');
-// var $lessonTitle = $('.chessboard-area h2'); <-- 안전을 위해 초기 캐싱 제거
 var $lessonDesc = $('#lesson-description');
 var $hintText = $('#hint-text');
 var $contentPanel = $('#content-panel');
@@ -52,15 +51,40 @@ function updateStepContent() {
     $('#next-step-btn').remove(); 
     $contentPanel.append('<button id="next-step-btn" onclick="loadNextStep()">다음 단계로 이동</button>');
     
-    // NEW LOGIC: 퍼즐 모드일 경우 버튼 숨김 및 메시지 변경
+    // 퍼즐 모드일 경우 버튼 숨김 및 메시지 변경
+    let defaultStatusMessage = '체스보드에서 행마를 테스트하고 다음 단계로 이동하세요.';
+    
     if (currentStep.expectedMove) {
         $('#next-step-btn').hide(); // 버튼 숨김
-        $status.html('정확한 행마를 찾아 정답을 맞혀야 다음 단계로 넘어갈 수 있습니다.');
+        defaultStatusMessage = '정확한 행마를 찾아 정답을 맞혀야 다음 단계로 넘어갈 수 있습니다.';
     } else {
         // 이론 모드일 경우
         $('#next-step-btn').show(); // 버튼 보임
-        $status.html('체스보드에서 행마를 테스트하고 다음 단계로 이동하세요.');
     }
+    
+    $status.html(defaultStatusMessage);
+
+    // ⭐⭐ 앙파상 시연 로직 (Step ID: '2.2') ⭐⭐
+    if (currentStep.stepId === '2.2') {
+        $('#next-step-btn').hide(); // 다시 한번 숨김
+        
+        // 1초 후 흑의 C7 폰이 C5로 움직이는 애니메이션 실행
+        setTimeout(function() {
+            // 1. 시각적으로 폰 이동 애니메이션 실행 (c7->c5)
+            board.move('c7-c5');
+            
+            // 2. 움직인 후, 게임 객체(chess.js)의 상태를 앙파상 가능 상태로 업데이트
+            // 이 FEN은 흑이 c5로 움직인 후 백 턴이며 앙파상이 가능한 상태('w - c6 0 2')를 나타냅니다.
+            const enPassantFen = '8/8/8/2pP4/8/8/8/K7 w - c6 0 2'; 
+            game.load(enPassantFen); 
+
+            $status.html('흑이 C7에서 C5로 움직였습니다! 이제 D5 폰으로 앙파상을 시도하세요.');
+            
+            // 디버깅을 위해 콘솔에 로그를 남깁니다.
+            console.log("앙파상 시연 완료. 현재 FEN (앙파상 가능):", game.fen());
+        }, 1000); // 1000ms (1초) 지연 후 실행
+    }
+    // ⭐⭐ 앙파상 시연 로직 끝 ⭐⭐
 }
 
 
@@ -73,6 +97,7 @@ function onDrop (source, target) {
         // 정답 확인: source와 target이 모두 일치해야 함
         if (source === expected.from && target === expected.to) {
             // 정답인 경우: move를 시도
+            // promotion: 'q'를 기본으로 설정하여 폰이 8랭크에 도달하면 자동으로 퀸으로 승격 처리
             const move = game.move({ from: source, to: target, promotion: 'q' });
             
             if (move === null) return 'snapback'; 
@@ -130,6 +155,7 @@ function toggleHint() {
 
 // 7. 기물 스냅백 방지 (유효하지 않은 수일 경우 onDrop에서 처리)
 function onSnapEnd () {
+    // 유효하지 않은 드롭이 있었을 경우 보드 상태를 게임 상태와 동기화
     board.position(game.fen());
 }
 
@@ -138,7 +164,6 @@ $(document).ready(function() {
     // <h2> 태그가 index.html에 없으면 추가합니다.
     if ($('.chessboard-area h2').length === 0) {
         $('.chessboard-area').prepend('<h2></h2>');
-        // $lessonTitle = $('.chessboard-area h2'); // 캐시 변수 제거
     }
     updateStepContent(); // 첫 단계 로드
     $(window).on('resize', board.resize);
