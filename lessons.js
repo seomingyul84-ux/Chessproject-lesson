@@ -108,11 +108,11 @@ const LESSON_DATA = [
             // 7단계: 나이트의 기물 잡기
             {
                 stepId: '1.2.3',
-                title: "7단계: 나이트 (Knight, N, 3점) - 기물 잡기",
-                fen: '8/8/8/3p4/4N3/8/8/8 w - - 0 1', 
-                description: `<p>나이트는 L자 모양으로 이동하는 경로에 다른 기물이 있어도 뛰어넘을 수 있습니다. E4 나이트로 D5 폰을 잡으세요.</p>`,
+                title: "7단계: 나이트 (Knight, N, 3점) - 뛰어넘기",
+                fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 
+                description: `<p>나이트는 L자 모양으로 이동하는 경로에 다른 기물이 있어도 뛰어넘을 수 있습니다. g1 나이트를 f3으로 이동시키 세요.</p>`,
                 hint: '나이트는 E4에서 L자로 이동해 D5에 있는 흑 폰을 잡습니다. (기보 표기: Nxd5)',
-                expectedMove: { from: 'e4', to: 'd5' }
+                expectedMove: { from: 'g1', to: 'f3' }
             },
             
             // 8단계: 비숍의 행마 (예시 2개)
