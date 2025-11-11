@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 애니메이션 시간 고정 및 클린업 지연 300ms 적용)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 클린업 지연 0ms 적용)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -20,7 +20,7 @@ var config = {
     onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png',
     
-    // ⭐️ 애니메이션 시간을 300ms로 명시적으로 고정
+    // 애니메이션 시간은 그대로 300ms 유지 (사용자가 애니메이션을 원하므로)
     animationDuration: 300 
 };
 
@@ -123,8 +123,8 @@ function handleSquareClick(square) {
                 squareToHighlight = null; 
             }
             
-            // ⭐️ 클린업 지연 300ms 적용
-            setTimeout(removeHighlights, 300); 
+            // ⭐️ 클린업 지연 0ms 적용
+            setTimeout(removeHighlights, 0); 
             return; 
         }
         
@@ -147,8 +147,8 @@ function handleSquareClick(square) {
         console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
         board.move(source + '-' + target);
         
-        // ⭐️ 클린업 지연 300ms 적용
-        setTimeout(removeHighlights, 300); 
+        // ⭐️ 클린업 지연 0ms 적용
+        setTimeout(removeHighlights, 0); 
         
         squareToHighlight = null; 
         
@@ -306,5 +306,4 @@ $(document).ready(function() {
     $(window).on('resize', function() {
         if(board) board.resize();
     });
-});
 });
