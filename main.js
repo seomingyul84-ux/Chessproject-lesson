@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 수정 버전 - DOM 직접 삽입 및 오류 방지)
+// main.js 파일 전체 코드 (최종 안정화 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -29,7 +29,7 @@ function onDragStart (source, piece, position, orientation) {
     return false; 
 }
 
-// ⭐ 수정: highlightSquare 함수가 클래스 대신 .move-dot을 삽입하도록 변경
+// highlightSquare 함수: .move-dot을 삽입하여 점 표시
 function highlightSquare (square, isTarget = false) {
     var $square = $('#board .square-' + square);
     
@@ -44,7 +44,7 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐ 수정: .move-dot을 제거하도록 로직 추가
+// removeHighlights 함수: 하이라이트와 .move-dot을 모두 제거
 function removeHighlights () {
     // 하이라이트 클래스 제거
     $('#board .square').removeClass('highlight-source highlight-target'); 
@@ -192,8 +192,8 @@ function updateStepContent() {
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
-    removeHighlights(); // 매 단계 로드 시 기존 하이라이트 제거
-    squareToHighlight = null; // 선택 상태 초기화
+    removeHighlights(); 
+    squareToHighlight = null; 
 
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
     $hintText.slideUp();
@@ -245,14 +245,20 @@ $(document).ready(function() {
     
     updateStepContent(); // 첫 단계 로드
     
-    $('#board').off('click', '.square-55d63').on('click', '.square-55d63', function() {
+    // ⭐️ 최종 안정화 수정: document에 이벤트 위임을 사용하여 보드가 재로드되어도 클릭이 작동하도록 보장
+    $(document).off('click', '#board .square-55d63').on('click', '#board .square-55d63', function() {
         
-        // ⭐ 오류 해결: board.getSquare 대신 Chessboard.getSquare 정적 함수 사용 재시도
+        // ⭐ 디버깅 코드: 클릭이 성공적으로 처리되었는지 콘솔에서 확인
+        console.log("✅ Square Click Event Fired!");
+        
+        // TypeError 해결: board.getSquare 대신 Chessboard.getSquare 정적 함수 사용
         if (typeof Chessboard.getSquare === 'function') {
             var square = Chessboard.getSquare(this);
             handleSquareClick(square);
+            
+            console.log("Processed square:", square); 
         } else {
-            console.error("Chessboard.getSquare is not available. Check library load.");
+            console.error("Critical Error: Chessboard.getSquare function is missing.");
         }
     });
 
