@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 이동 로직 보강)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 클린업 로직 보강)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -64,10 +64,15 @@ function highlightSquare (square, isTarget = false) {
 
 // removeHighlights 함수: 하이라이트와 .move-dot을 모두 제거
 function removeHighlights () {
-    // 하이라이트 클래스 제거
+    console.log("DEBUG: removeHighlights 호출됨 - 클린업 시작");
+    
+    // 1. 하이라이트 클래스 제거 (.square 요소에서 제거)
     $('#board .square').removeClass('highlight-source highlight-target'); 
-    // 삽입된 점 요소 제거
-    $('#board .square .move-dot').remove(); 
+    
+    // 2. 삽입된 점 요소 제거 (.move-dot)
+    $('#board .move-dot').remove(); 
+    
+    console.log("DEBUG: 클린업 완료");
 }
 
 // 칸 클릭을 처리하여 행마를 시도하는 핵심 함수
@@ -111,8 +116,8 @@ function handleSquareClick(square) {
                 board.move(source + '-' + target); 
                 squareToHighlight = null; 
             }
-            removeHighlights();
-            return; // ⭐️ 중요: 퍼즐 모드 처리가 끝났으므로 함수 종료
+            removeHighlights(); 
+            return; 
         }
         
         // 일반 모드 이동
@@ -123,7 +128,7 @@ function handleSquareClick(square) {
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
                 console.log("DEBUG: 유효하지 않지만 다른 기물 선택으로 변경");
-                removeHighlights();
+                removeHighlights(); 
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
             } 
@@ -133,7 +138,7 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
         board.move(source + '-' + target);
-        removeHighlights();
+        removeHighlights(); // ⭐️ 이동 완료 후 클린업 호출
         squareToHighlight = null; 
         
         $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
@@ -155,7 +160,7 @@ function onDrop (source, target) {
             $status.html('정답입니다! 다음 단계로 이동 버튼을 눌러주세요.');
             $('#next-step-btn').show(); 
             
-            return 'correct'; // ⭐️ 추가: 명확한 반환값
+            return 'correct'; 
         } else {
             $feedbackPanel.addClass('feedback-incorrect').removeClass('feedback-correct');
             $status.html('아닙니다. 다른 행마를 시도하여 정답을 찾아보세요.');
@@ -170,7 +175,7 @@ function onDrop (source, target) {
     
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
     $status.html(`성공적으로 수를 두었습니다: ${move.san}. 다른 행마도 테스트해보세요.`);
-    return 'success'; // ⭐️ 추가: 명확한 반환값
+    return 'success'; 
 }
 
 
