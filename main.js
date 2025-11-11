@@ -70,7 +70,10 @@ function removeHighlights () {
     $('#board .square').removeClass('highlight-source highlight-target'); 
     
     // 2. 삽입된 점 요소 제거 (.move-dot)
-    $('#board .move-dot').remove(); 
+    // ⭐️ 보강된 로직: 모든 .square 요소 내부의 .move-dot을 찾아 확실하게 제거
+    $('#board .square').each(function() {
+        $(this).find('.move-dot').remove();
+    });
     
     console.log("DEBUG: 클린업 완료");
 }
@@ -138,7 +141,7 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
         board.move(source + '-' + target);
-        removeHighlights(); // ⭐️ 이동 완료 후 클린업 호출
+        removeHighlights(); // 이동 완료 후 클린업 호출
         squareToHighlight = null; 
         
         $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
