@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 좌표 추출 로직 수정)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 이동 로직 보강)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -29,18 +29,16 @@ function onDragStart (source, piece, position, orientation) {
     return false; 
 }
 
-// ⭐️ 최종 수정 함수: DOM 클래스에서 좌표를 확실하게 추출
+// ⭐️ 좌표 추출 함수: DOM 클래스에서 좌표를 확실하게 추출
 function getSquareFromDOM(element) {
     var classList = $(element).attr('class').split(' ');
     for (var i = 0; i < classList.length; i++) {
         var className = classList[i];
         
-        // 'square-'로 시작하는 클래스만 필터링
         if (className.substring(0, 7) === 'square-') {
             var square = className.substring(7); 
             
-            // 좌표는 반드시 두 글자(예: 'a1', 'h8')여야 합니다. 
-            // 'square-55d63'와 같은 ID 클래스를 제외하기 위함입니다.
+            // 좌표는 반드시 두 글자(예: 'a1', 'h8')여야 합니다.
             if (square.length === 2 && square.match(/^[a-h][1-8]$/)) { 
                 return square; 
             }
@@ -55,7 +53,7 @@ function highlightSquare (square, isTarget = false) {
     
     if (isTarget) {
         // 이동 가능 칸인 경우 실제 DOM 요소를 삽입합니다.
-        if($square.find('.move-dot').length === 0) { // 중복 삽입 방지
+        if($square.find('.move-dot').length === 0) { 
              $square.append('<div class="move-dot"></div>');
         }
     } 
@@ -76,6 +74,7 @@ function removeHighlights () {
 function handleSquareClick(square) {
     // 1. 현재 선택된 기물이 없음 (새로운 기물 선택 시도)
     if (squareToHighlight === null) {
+        console.log("DEBUG: 1. 기물 선택 시도:", square);
         if (game.get(square) && game.get(square).color === game.turn()) {
             // 기물 선택: 하이라이트 및 이동 가능 칸 표시
             squareToHighlight = square;
@@ -92,6 +91,7 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
+            console.log("DEBUG: 2a. 선택 해제 (같은 칸 클릭)");
             removeHighlights();
             squareToHighlight = null;
             return;
@@ -100,9 +100,11 @@ function handleSquareClick(square) {
         // b) 이동 시도
         var source = squareToHighlight;
         var target = square;
+        console.log(`DEBUG: 2b. 이동 시도: ${source} -> ${target}`);
         
         // 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
+            console.log("DEBUG: 퍼즐 모드 - onDrop 호출");
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
@@ -110,15 +112,17 @@ function handleSquareClick(square) {
                 squareToHighlight = null; 
             }
             removeHighlights();
-            return;
+            return; // ⭐️ 중요: 퍼즐 모드 처리가 끝났으므로 함수 종료
         }
         
         // 일반 모드 이동
         var move = game.move({ from: source, to: target, promotion: 'q' });
 
         if (move === null) {
+            console.log("DEBUG: 일반 모드 - 유효하지 않은 이동 (null 반환)");
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
+                console.log("DEBUG: 유효하지 않지만 다른 기물 선택으로 변경");
                 removeHighlights();
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
@@ -127,6 +131,7 @@ function handleSquareClick(square) {
         }
 
         // 유효한 이동인 경우
+        console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
         board.move(source + '-' + target);
         removeHighlights();
         squareToHighlight = null; 
@@ -150,7 +155,7 @@ function onDrop (source, target) {
             $status.html('정답입니다! 다음 단계로 이동 버튼을 눌러주세요.');
             $('#next-step-btn').show(); 
             
-            return; 
+            return 'correct'; // ⭐️ 추가: 명확한 반환값
         } else {
             $feedbackPanel.addClass('feedback-incorrect').removeClass('feedback-correct');
             $status.html('아닙니다. 다른 행마를 시도하여 정답을 찾아보세요.');
@@ -165,7 +170,7 @@ function onDrop (source, target) {
     
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
     $status.html(`성공적으로 수를 두었습니다: ${move.san}. 다른 행마도 테스트해보세요.`);
-    return; 
+    return 'success'; // ⭐️ 추가: 명확한 반환값
 }
 
 
