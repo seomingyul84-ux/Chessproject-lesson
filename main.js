@@ -9,18 +9,15 @@ var $lessonDesc = $('#lesson-description');
 var $hintText = $('#hint-text');
 var $contentPanel = $('#content-panel');
 
-// === 추가 변수 ===
-// 현재 클릭하여 하이라이트된 기물의 칸을 저장합니다.
 var squareToHighlight = null; 
 
 // 2. 체스보드 초기화 옵션
 var config = {
-    draggable: true, 
+    draggable: false, // <<<<<<< 드래그 앤 드롭 기능 비활성화!
     position: 'start', 
-    onDrop: onDrop,            // 기물을 드래그 앤 드롭했을 때
+    onDrop: onDrop,           
     onSnapEnd: onSnapEnd,
-    onDragStart: onDragStart,  // 기물 드래그 시작 시
-    // onMouseoverSquare, onMouseoutSquare 제거됨
+    onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png' 
 };
 
@@ -28,31 +25,22 @@ var config = {
 // === 3. 이벤트 핸들러 함수 (클릭 기반 이동 및 해제 로직) ===
 // =========================================================
 
-// 현재 턴의 기물만 드래그 가능하도록 설정 (드래그 앤 드롭 사용 시 대비)
+// draggable: false이므로 이 함수는 더 이상 호출되지 않습니다.
 function onDragStart (source, piece, position, orientation) {
-    if (game.game_over() === true ||
-        (game.turn() === 'w' && piece.search('w') === -1) ||
-        (game.turn() === 'b' && piece.search('b') === -1)) {
-        return false;
-    }
+    return false; // 드래그 시작 자체를 막음
 }
 
-// 칸에 하이라이트 및 클릭 이벤트를 추가 (점으로 표시하는 CSS가 있다면 더 좋습니다.)
 function highlightSquare (square, isTarget = false) {
     var $square = $('#board .square-' + square);
     
-    // 타겟 칸 (합법적인 수)은 점으로 표시되도록 CSS 클래스를 사용합니다.
-    // CSS에 .highlight-target 클래스가 '점' 스타일을 가지도록 정의해야 합니다.
     if (isTarget) {
         $square.addClass('highlight-target');
     } 
-    // 선택된 기물이 있는 칸은 강조합니다.
     else {
         $square.addClass('highlight-source');
     }
 }
 
-// 모든 하이라이트 및 클래스를 제거
 function removeHighlights () {
     $('#board .square').removeClass('highlight-source highlight-target');
 }
@@ -61,7 +49,6 @@ function removeHighlights () {
 function handleSquareClick(square) {
     // 1. 현재 선택된 기물이 없음 (새로운 기물 선택 시도)
     if (squareToHighlight === null) {
-        // 클릭한 칸에 현재 턴의 기물이 있는지 확인
         if (game.get(square) && game.get(square).color === game.turn()) {
             // 기물 선택: 하이라이트 및 이동 가능 칸 표시
             squareToHighlight = square;
@@ -71,8 +58,6 @@ function handleSquareClick(square) {
             for (var i = 0; i < moves.length; i++) {
                 highlightSquare(moves[i].to, true);
             }
-        } else {
-            // 빈 칸 또는 상대 기물 클릭: 무시
         }
     } 
     
@@ -91,10 +76,11 @@ function handleSquareClick(square) {
         
         // 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
+            // onDrop을 호출하여 정답인지 확인하고 내부적으로 game.move 처리
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
-                // 행마가 유효하고 정답인 경우
+                // 정답인 경우 보드 애니메이션 업데이트
                 board.move(source + '-' + target); 
                 squareToHighlight = null; 
             }
@@ -106,15 +92,13 @@ function handleSquareClick(square) {
         var move = game.move({ from: source, to: target, promotion: 'q' });
 
         if (move === null) {
-            // 유효하지 않은 이동인 경우 (하이라이트만 해제하고, 새로운 기물 선택으로 간주 가능)
-            
-            // 유효하지 않지만, 현재 턴의 기물이라면 선택 변경
+             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
                 removeHighlights();
-                squareToHighlight = null; // 초기화 후 재귀 호출로 선택 변경
-                handleSquareClick(square);
+                squareToHighlight = null; 
+                handleSquareClick(square); // 선택 변경을 위해 재귀 호출
             } else {
-                // 유효하지 않은 이동 + 기물이 아닌 곳 클릭: 무시하고 하이라이트 유지
+                // 유효하지 않은 이동: 무시
             }
             return;
         }
@@ -129,10 +113,9 @@ function handleSquareClick(square) {
     }
 }
 
-
-// 4. 기물 이동 시 (onDrop 함수 - 드래그 앤 드롭 전용)
+// 4. 기물 이동 시 (onDrop 함수 - 클릭 이벤트에서만 호출됨)
 function onDrop (source, target) {
-    // 이 함수는 드래그 앤 드롭으로만 호출되어야 하며, 퍼즐 정답 확인 로직을 담습니다.
+    // 1. 퍼즐 모드 정답 확인
     if (currentStep && currentStep.expectedMove) {
         const expected = currentStep.expectedMove;
         
@@ -140,13 +123,14 @@ function onDrop (source, target) {
             const move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback'; 
 
+            // 피드백 패널에 초록색 배경 적용
             $feedbackPanel.removeClass('feedback-incorrect').addClass('feedback-correct');
             $status.html('정답입니다! 다음 단계로 이동 버튼을 눌러주세요.');
             $('#next-step-btn').show(); 
             
             return; 
-
         } else {
+            // 피드백 패널에 빨간색 배경 적용
             $feedbackPanel.addClass('feedback-incorrect').removeClass('feedback-correct');
             $status.html('아닙니다. 다른 행마를 시도하여 정답을 찾아보세요.');
             
@@ -154,7 +138,7 @@ function onDrop (source, target) {
         }
     }
 
-    // 일반 이론 모드 (드래그 앤 드롭)
+    // 2. 일반 이론 모드 
     var move = game.move({ from: source, to: target, promotion: 'q' }); 
     if (move === null) return 'snapback'; 
     
@@ -169,8 +153,8 @@ function loadNextStep() {
     currentStepIndex++;
     
     if (currentStepIndex < currentLesson.steps.length) {
-        removeHighlights(); // 하이라이트 제거
-        squareToHighlight = null; // 선택 초기화
+        removeHighlights(); 
+        squareToHighlight = null; 
         updateStepContent(); 
     } else {
         alert('레슨 1의 모든 단계를 완료했습니다! 감사합니다.');
@@ -184,7 +168,7 @@ function toggleHint() {
     $hintText.slideToggle();
 }
 
-// 7. 기물 스냅백 방지
+// 7. 기물 스냅백 방지 (보드와 게임 상태 동기화)
 function onSnapEnd () {
     board.position(game.fen());
 }
@@ -194,18 +178,28 @@ function onSnapEnd () {
 // =========================================================
 
 function updateStepContent() {
+    if (typeof currentLesson === 'undefined') {
+        console.error("ERROR: lessons.js 파일이 로드되지 않았거나 변수 정의에 문제가 있습니다.");
+        $status.html("오류: 레슨 데이터를 찾을 수 없습니다.");
+        return;
+    }
+    
     currentStep = currentLesson.steps[currentStepIndex];
 
-    $('.chessboard-area h2').text(`[${currentStepIndex + 1}/${currentLesson.steps.length}] ${currentStep.title} - ${currentStep.title}`);
+    // 레슨 제목/단계 제목 설정
+    $('.chessboard-area h2').text(`[${currentStepIndex + 1}/${currentLesson.steps.length}] ${currentLesson.title} - ${currentStep.title}`);
     
+    // HTML 내용을 innerHTML로 설정
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
+    // 피드백 패널 초기화
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
     $hintText.slideUp();
     
+    // 체스보드 설정 및 로드
     config.position = currentStep.fen;
-    config.draggable = true; 
+    config.draggable = false; // 드래그 비활성화 유지
     
     if (board) {
         board.destroy();
@@ -213,13 +207,12 @@ function updateStepContent() {
     board = Chessboard('board', config);
     game = new Chess(currentStep.fen); 
     
-    $('#next-step-btn').remove(); 
-    $contentPanel.append('<button id="next-step-btn" onclick="loadNextStep()">다음 단계로 이동</button>');
+    // 다음 단계 버튼 초기화
+    $('#next-step-btn').hide(); 
     
     let defaultStatusMessage = '체스보드에서 행마를 테스트하고 다음 단계로 이동하세요.';
     
     if (currentStep.expectedMove) {
-        $('#next-step-btn').hide(); 
         defaultStatusMessage = '정확한 행마를 찾아 정답을 맞혀야 다음 단계로 넘어갈 수 있습니다.';
     } else {
         $('#next-step-btn').show(); 
@@ -227,7 +220,7 @@ function updateStepContent() {
     
     $status.html(defaultStatusMessage);
 
-    // ⭐⭐ 앙파상 시연 로직 (Step ID: '2.2' - 15단계) ⭐⭐
+    // ⭐⭐ 앙파상 시연 로직 (Step ID: '2.2') ⭐⭐
     if (currentStep.stepId === '2.2') {
         $('#next-step-btn').hide(); 
         
@@ -236,26 +229,36 @@ function updateStepContent() {
             
             const enPassantFen = '8/8/8/2pP4/8/8/8/K7 w - c6 0 2'; 
             game.load(enPassantFen); 
+            board.position(enPassantFen);
 
             $status.html('흑이 C7에서 C5로 움직였습니다! 이제 D5 폰으로 앙파상을 시도하세요.');
         }, 1000); 
     }
-    // ⭐⭐ 앙파상 시연 로직 끝 ⭐⭐
-    
-    // ⭐⭐ 핵심 수정 부분: 클릭 이벤트 리스너 재부착 ⭐⭐
-    // 모든 .square-55d63 (체스 칸)에 클릭 이벤트를 바인딩
-    $('#board').off('click', '.square-55d63').on('click', '.square-55d63', function() {
-        var square = Chessboard.getSquare(this);
-        handleSquareClick(square);
-    });
 }
 
 
 // 9. 초기화 및 이벤트 리스너 설정
 $(document).ready(function() {
+    
+    // <h2> 태그가 index.html에 없으면 추가합니다.
     if ($('.chessboard-area h2').length === 0) {
         $('.chessboard-area').prepend('<h2></h2>');
     }
-    updateStepContent(); 
-    $(window).on('resize', board.resize);
+    
+    // 다음 단계 버튼 클릭 핸들러
+    $('#next-step-btn').on('click', loadNextStep);
+    
+    updateStepContent(); // 첫 단계 로드
+    
+    // 기물 클릭 이벤트 리스너 (클릭 기반 이동)
+    // .square-55d63은 chessboard.js의 모든 칸에 붙는 공통 클래스
+    $('#board').off('click', '.square-55d63').on('click', '.square-55d63', function() {
+        var square = Chessboard.getSquare(this);
+        handleSquareClick(square);
+    });
+
+    // 창 크기 조절 시 보드 크기 재조절
+    $(window).on('resize', function() {
+        if(board) board.resize();
+    });
 });
