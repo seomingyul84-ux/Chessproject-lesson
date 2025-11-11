@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>체스 레슨</title>
 
-    <link rel="stylesheet" href="lib/chessboard.min.css"> 
-    
-    <link rel="stylesheet" href="styles.css"> 
-
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+    <link rel="stylesheet" href="lib/chessboard.min.css"> 
     <script src="lib/chess.min.js"></script>
     <script src="lib/chessboard-1.0.0.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css"> 
 </head>
 <body>
     <div class="container">
@@ -24,17 +24,21 @@
             </div>
 
             <div class="lesson-content">
+                
                 <div id="feedback-panel">
-                    <div id="feedback-message"></div>
+                    <div id="feedback-message">체스보드에서 행마를 테스트하고 다음 단계로 이동하세요.</div>
                 </div>
                 
                 <div id="content-panel">
+                    <h2>레슨 내용</h2>
                     <div id="lesson-description"></div>
                     
                     <div class="hint-container">
                         <button id="toggle-hint-btn" onclick="toggleHint()">힌트 보기</button>
                         <p id="hint-text" style="display: none;"></p>
                     </div>
+
+                    <button id="next-step-btn" style="display: none;">다음 단계로 이동</button>
                 </div>
             </div>
         </div>
