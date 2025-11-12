@@ -260,4 +260,22 @@ var currentLesson = {
             stepId: '1.0.3.A',
             title: "18단계: 용어 정리 (1) - 체크메이트 테스트",
             fen: 'rnbqkbnr/pppp1ppp/8/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 2', 
-            description: `<p>체크메이트 (#): 킹이 잡힐 상황(체크)을 피할 수 없을 때 발생하며, 게임이 즉시 종료
+            description: `<p>체크메이트 (#): 킹이 잡힐 상황(체크)을 피할 수 없을 때 발생하며, 게임이 즉시 종료됩니다. 흰색 퀸(H5)을 F7 폰이 있는 곳으로 움직여 체크메이트를 시도해보세요. (이 오프닝은 'Fool's Mate'입니다.)</p>`,
+            hint: 'H5 퀸을 F7로 움직여 흑 킹을 공격하세요.',
+            expectedMove: { from: 'h5', to: 'f7' }
+        },
+
+        // 19단계: 용어 정리 (2) - 전략 및 실수 (이론)
+        {
+            stepId: '1.0.3.B',
+            title: "19단계: 용어 정리 (2) - 전략 및 실수",
+            fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 
+            description: `
+                <p>블런더 (Blunder): 게임의 결과가 뒤바뀔 정도의 심각한 실수를 뜻합니다. (최악의 수)</p>
+                <p>갬빗 (Gambit): 오프닝에서 주로 폰을 희생하고 더 좋은 포지션이나 빠른 발전을 차지하는 전략입니다. (예: 킹스 갬빗) </p>
+            `,
+            hint: '퀸은 모든 방향으로 이동 가능하며, 킹은 안전이 최우선입니다.',
+            expectedMove: null
+        }
+    ]
+};
