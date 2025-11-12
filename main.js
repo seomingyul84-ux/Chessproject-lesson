@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 클린업 지연 0ms 적용)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 애니메이션 100ms 단축 및 클린업 지연 150ms 적용)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -20,8 +20,8 @@ var config = {
     onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png',
     
-    // 애니메이션 시간은 그대로 300ms 유지 (사용자가 애니메이션을 원하므로)
-    animationDuration: 300 
+    // ⭐️ 애니메이션 시간을 100ms로 강제 단축
+    animationDuration: 100 
 };
 
 // =========================================================
@@ -113,6 +113,9 @@ function handleSquareClick(square) {
         var target = square;
         console.log(`DEBUG: 2b. 이동 시도: ${source} -> ${target}`);
         
+        // 이전 칸의 기물 이미지 요소를 찾아서 즉시 제거 (렌더링 최적화 시도)
+        $('#board .square-' + source).find('.piece').remove(); 
+        
         // 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
             console.log("DEBUG: 퍼즐 모드 - onDrop 호출");
@@ -121,10 +124,13 @@ function handleSquareClick(square) {
             if (result !== 'snapback') {
                 board.move(source + '-' + target); 
                 squareToHighlight = null; 
+            } else {
+                 // 이동 실패 시: game.fen()으로 기물 위치 즉시 복구
+                board.position(game.fen()); 
             }
             
-            // ⭐️ 클린업 지연 0ms 적용
-            setTimeout(removeHighlights, 0); 
+            // ⭐️ 클린업 지연 150ms 적용
+            setTimeout(removeHighlights, 150); 
             return; 
         }
         
@@ -133,6 +139,10 @@ function handleSquareClick(square) {
 
         if (move === null) {
             console.log("DEBUG: 일반 모드 - 유효하지 않은 이동 (null 반환)");
+            
+            // ⭐️ 이동 실패 시: game.fen()으로 기물 위치 즉시 복구 및 선택 변경 시도
+            board.position(game.fen()); 
+            
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
                 console.log("DEBUG: 유효하지 않지만 다른 기물 선택으로 변경");
@@ -147,8 +157,8 @@ function handleSquareClick(square) {
         console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
         board.move(source + '-' + target);
         
-        // ⭐️ 클린업 지연 0ms 적용
-        setTimeout(removeHighlights, 0); 
+        // ⭐️ 클린업 지연 150ms 적용
+        setTimeout(removeHighlights, 150); 
         
         squareToHighlight = null; 
         
