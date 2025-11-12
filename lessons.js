@@ -1,319 +1,263 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 클린업 지연 500ms 및 최적화)
-
-// 1. 초기 설정 및 DOM 요소 캐시
-var board = null;
-var game = new Chess(); 
-var $feedbackPanel = $('#feedback-panel');
-var $status = $('#feedback-message');
-var $lessonDesc = $('#lesson-description');
-var $hintText = $('#hint-text');
-var $contentPanel = $('#content-panel');
-
-var squareToHighlight = null; 
-
-// 2. 체스보드 초기화 옵션
-var config = {
-    draggable: false, // 드래그 앤 드롭 기능 비활성화
-    position: 'start', 
-    onDrop: onDrop,           
-    onSnapEnd: onSnapEnd,
-    onDragStart: onDragStart,  
-    pieceTheme: 'img/{piece}.png',
-    
-    // ⭐️ 애니메이션 시간을 300ms로 명시적으로 고정
-    animationDuration: 300 
-};
-
 // =========================================================
-// === 3. 이벤트 핸들러 함수 및 유틸리티 ===
+// lessons.js 파일: main.js가 사용하는 레슨 데이터 정의 (오류 수정 완료)
 // =========================================================
 
-function onDragStart (source, piece, position, orientation) {
-    return false; 
-}
+var currentLesson = {
+    id: 1,
+    title: "레슨 1: 체스의 기본 (행마 및 용어)",
+    mode: 'theory', 
 
-// ⭐️ 좌표 추출 함수: DOM 클래스에서 좌표를 확실하게 추출
-function getSquareFromDOM(element) {
-    var classList = $(element).attr('class').split(' ');
-    for (var i = 0; i < classList.length; i++) {
-        var className = classList[i];
+    steps: [
+        // 1단계: 기본 세팅 및 좌표 (이론)
+        {
+            stepId: '1.0.1',
+            title: "1단계: 체스보드와 좌표",
+            fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+            description: `
+                <p>체스는 백(White)이 먼저 시작합니다. 체스보드에서 기물의 위치를 파악하는 좌표(Coordinate)를 확인하세요.</p>
+                <ul>
+                    <li>파일 (File): 세로열 (a~h). 백 기준으로 왼쪽에서부터 표기합니다.</li>
+                    <li>랭크 (Rank): 가로열 (1~8). 백 기준으로 아래에서부터 표기합니다.</li>
+                    <li>좌표 표기는 파일 + 랭크 순서입니다. (예: c6)</li>
+                </ul>
+            `,
+            hint: '체스보드의 가장 왼쪽 아래 칸은 a1, 가장 오른쪽 위 칸은 h8입니다.',
+            expectedMove: null
+        },
         
-        if (className.substring(0, 7) === 'square-') {
-            var square = className.substring(7); 
-            
-            // 좌표는 반드시 두 글자(예: 'a1', 'h8')여야 합니다.
-            if (square.length === 2 && square.match(/^[a-h][1-8]$/)) { 
-                return square; 
-            }
-        }
-    }
-    return null; 
-}
-
-// highlightSquare 함수: .move-dot을 삽입하여 점 표시
-function highlightSquare (square, isTarget = false) {
-    var $square = $('#board .square-' + square);
-    
-    if (isTarget) {
-        // 이동 가능 칸인 경우 실제 DOM 요소를 삽입합니다.
-        if($square.find('.move-dot').length === 0) { 
-             $square.append('<div class="move-dot"></div>');
-        }
-    } 
-    else {
-        $square.addClass('highlight-source'); // 선택된 기물 하이라이트
-    }
-}
-
-// removeHighlights 함수: 하이라이트와 .move-dot을 모두 제거
-function removeHighlights () {
-    console.log("DEBUG: removeHighlights 호출됨 - 클린업 시작");
-    
-    // 1. 하이라이트 클래스 제거 (.square 요소에서 제거)
-    $('#board .square').removeClass('highlight-source highlight-target'); 
-    
-    // 2. 삽입된 점 요소 제거 (.move-dot)
-    // 보강된 로직: 모든 .square 요소 내부의 .move-dot을 찾아 확실하게 제거
-    $('#board .square').each(function() {
-        $(this).find('.move-dot').remove();
-    });
-    
-    console.log("DEBUG: 클린업 완료");
-}
-
-// 칸 클릭을 처리하여 행마를 시도하는 핵심 함수
-function handleSquareClick(square) {
-    // 1. 현재 선택된 기물이 없음 (새로운 기물 선택 시도)
-    if (squareToHighlight === null) {
-        console.log("DEBUG: 1. 기물 선택 시도:", square);
-        if (game.get(square) && game.get(square).color === game.turn()) {
-            // 기물 선택: 하이라이트 및 이동 가능 칸 표시
-            squareToHighlight = square;
-            highlightSquare(square);
-            
-            var moves = game.moves({ square: square, verbose: true });
-            for (var i = 0; i < moves.length; i++) {
-                highlightSquare(moves[i].to, true); // 이동 가능 칸 점 표시
-            }
-        }
-    } 
-    
-    // 2. 이미 선택된 기물이 있음 (이동 또는 선택 해제 시도)
-    else {
-        // a) 선택된 기물을 다시 클릭 (선택 해제)
-        if (squareToHighlight === square) {
-            console.log("DEBUG: 2a. 선택 해제 (같은 칸 클릭)");
-            removeHighlights();
-            squareToHighlight = null;
-            return;
-        }
-
-        // b) 이동 시도
-        var source = squareToHighlight;
-        var target = square;
-        console.log(`DEBUG: 2b. 이동 시도: ${source} -> ${target}`);
+        // 2단계: 좌표 퀴즈
+        {
+            stepId: '1.0.1.A',
+            title: "2단계: 좌표 테스트 (E4)",
+            fen: '8/8/8/8/8/8/4P3/8 w - - 0 1',
+            description: `<p>체스보드에서 좌표 읽기를 연습해 봅시다. E2 폰을 움직여 좌표 <strong>e4</strong> 칸으로 이동시키세요. (e:파일, 4:랭크)</p>`,
+            hint: '파일은 세로, 랭크는 가로입니다. 왼쪽에서 E, 아래에서 4를 찾으세요.',
+            expectedMove: { from: 'e2', to: 'e4' }
+        },
         
-        // 이전 칸의 기물 이미지 요소를 찾아서 즉시 제거 (렌더링 최적화 시도)
-        $('#board .square-' + source).find('.piece').remove(); 
+        // 3단계: 기보 표기 (이론)
+        {
+            stepId: '1.0.2',
+            title: "3단계: 기보 표기 (Algebraic Notation)",
+            fen: 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1', 
+            description: `
+                <p>게임 행마를 기록하는 기보 표기법을 학습합니다. 기본적으로 (기물 기호) + (이동 위치)로 씁니다.</p>
+                <p>기물 기호: 킹(K), 퀸(Q), 룩(R), 비숍(B), 나이트(N). 폰은 기호 없이 좌표만 씁니다.</p>
+            `,
+            hint: '체스보드에서 폰을 움직이면 기호 없이 좌표만 기록되는 것을 상상해보세요.',
+            expectedMove: null
+        },
+
+        // 4단계: 폰의 2칸 전진 (예시 1)
+        {
+            stepId: '1.1.A.1',
+            title: "4단계 (1): 폰 (Pawn, 1점) - 2칸 전진 테스트 (A2)",
+            fen: '8/8/8/8/8/8/P7/8 w - - 0 1',
+            description: `<p>폰은 처음 움직일 때 1칸 또는 2칸 전진 가능합니다. A2 폰을 움직여 2칸 전진을 시도해 보세요.</p>`,
+            hint: 'A2 폰을 A4로 움직여 보세요.',
+            expectedMove: { from: 'a2', to: 'a4' }
+        },
         
-        // 퍼즐 모드인 경우 onDrop 로직 재활용
-        if (currentStep && currentStep.expectedMove) {
-            console.log("DEBUG: 퍼즐 모드 - onDrop 호출");
-            const result = onDrop(source, target);
-            
-            if (result !== 'snapback') {
-                board.move(source + '-' + target); 
-                squareToHighlight = null; 
-            } else {
-                 // 이동 실패 시: game.fen()으로 기물 위치 즉시 복구
-                board.position(game.fen()); 
-            }
-            
-            // ⭐️ 클린업 지연 500ms 적용
-            setTimeout(removeHighlights, 500); 
-            return; 
-        }
+        // 4단계: 폰의 2칸 전진 (예시 2)
+        {
+            stepId: '1.1.A.2',
+            title: "4단계 (2): 폰 (Pawn, 1점) - 2칸 전진 테스트 (E2)",
+            fen: '8/8/8/8/8/8/4P3/8 w - - 0 1',
+            description: `<p>다른 폰으로도 2칸 전진을 연습해 봅시다. E2 폰을 움직여 2칸 전진을 시도해 보세요.</p>`,
+            hint: 'E2 폰을 E4로 움직여 보세요.',
+            expectedMove: { from: 'e2', to: 'e4' }
+        },
+
+        // 5단계: 폰의 대각선 잡기 (예시 1)
+        {
+            stepId: '1.1.B.1',
+            title: "5단계 (1): 폰 (Pawn, 1점) - 대각선 잡기 테스트 (E4 -> D5)",
+            fen: '8/8/8/3p4/4P3/8/8/8 w - - 0 1', 
+            description: `<p>폰은 앞쪽 대각선에 상대 기물이 있을 때만 잡을 수 있습니다. E4 폰으로 D5 폰을 잡아보세요.</p>`,
+            hint: 'e4 폰을 d5로 움직여 흑 폰을 잡습니다. (기보 표기: exd5)',
+            expectedMove: { from: 'e4', to: 'd5' }
+        },
         
-        // 일반 모드 이동
-        var move = game.move({ from: source, to: target, promotion: 'q' });
+        // 5단계: 폰의 대각선 잡기 (예시 2)
+        {
+            stepId: '1.1.B.2',
+            title: "5단계 (2): 폰 (Pawn, 1점) - 대각선 잡기 테스트 (F5 -> G6)",
+            fen: '8/8/6p1/5P2/8/8/8/8 w - - 0 1', 
+            description: `<p>우측 상단에서도 연습해 봅시다. F5 폰으로 G6 폰을 잡아보세요.</p>`,
+            hint: 'f5 폰을 g6로 움직여 흑 폰을 잡습니다. (기보 표기: fxg6)',
+            expectedMove: { from: 'f5', to: 'g6' }
+        },
 
-        if (move === null) {
-            console.log("DEBUG: 일반 모드 - 유효하지 않은 이동 (null 반환)");
-            
-            // ⭐️ 이동 실패 시: game.fen()으로 기물 위치 즉시 복구 및 선택 변경 시도
-            board.position(game.fen()); 
-            
-            // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
-            if (game.get(square) && game.get(square).color === game.turn()) {
-                console.log("DEBUG: 유효하지 않지만 다른 기물 선택으로 변경");
-                removeHighlights(); 
-                squareToHighlight = null; 
-                handleSquareClick(square); // 선택 변경을 위해 재귀 호출
-            } 
-            return;
-        }
+        // 6단계: 폰의 1칸 전진 (규칙 추가됨)
+        {
+            stepId: '1.1.C',
+            title: "6단계: 폰 (Pawn, 1점) - 1칸 전진 테스트",
+            fen: '8/8/8/8/4P3/8/8/8 w - - 0 1',
+            description: `<p>폰이 이미 한 번 움직여 2칸이 아닌 1칸만 움직인 후에는, 다음부터는 오직 1칸만 전진할 수 있습니다. E4 폰을 1칸 전진시켜 보세요.</p>`,
+            hint: 'E4 폰을 E5로 이동시키세요.',
+            expectedMove: { from: 'e4', to: 'e5' }
+        },
 
-        // 유효한 이동인 경우
-        console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
-        board.move(source + '-' + target);
+        // 7단계: 나이트의 행마 (예시 1)
+        {
+            stepId: '1.2.1',
+            title: "7단계 (1): 나이트 (Knight, N, 3점) - F3으로 이동",
+            fen: '8/8/8/8/8/8/3N4/8 w - - 0 1', 
+            description: `<p>나이트는 L자 모양으로 움직입니다. D2에 있는 나이트를 F3으로 이동시켜 보세요.</p>`,
+            hint: 'D2에서 두 칸 옆, 한 칸 앞으로 이동하세요.',
+            expectedMove: { from: 'd2', to: 'f3' }
+        },
         
-        // ⭐️ 클린업 지연 500ms 적용
-        setTimeout(removeHighlights, 500); 
+        // 7단계: 나이트의 행마 (예시 2)
+        {
+            stepId: '1.2.2',
+            title: "7단계 (2): 나이트 (Knight, N, 3점) - 중앙으로 이동",
+            fen: '8/8/8/8/8/8/N7/8 w - - 0 1', 
+            description: `<p>나이트는 코너에서 움직임이 제한됩니다. A2에 있는 나이트를 C3으로 이동시켜 중앙으로 나아가세요.</p>`,
+            hint: 'A2에서 L자 모양으로 C3까지 가세요.',
+            expectedMove: { from: 'a2', to: 'c3' }
+        },
+
+        // 8단계: 나이트의 기물 잡기
+        {
+            stepId: '1.2.3',
+            title: "8단계: 나이트 (Knight, N, 3점) - 기물 잡기",
+            fen: '8/8/8/3p4/8/2N5/8/8 w - - 0 1', 
+            description: `<p>나이트는 L자 모양으로 이동하는 경로에 다른 기물이 있어도 뛰어넘을 수 있습니다. C3 나이트로 D5 폰을 잡으세요.</p>`,
+            hint: '나이트는 C3에서 L자로 이동해 D5에 있는 흑 폰을 잡습니다. (기보 표기: Nxd5)',
+            expectedMove: { from: 'c3', to: 'd5' }
+        },
+
+        // 9단계: 비숍의 행마 (예시 1)
+        {
+            stepId: '1.3.1',
+            title: "9단계 (1): 비숍 (Bishop, B, 3점) - 밝은 칸 대각선 끝까지",
+            fen: '8/8/8/8/8/8/8/B7 w - - 0 1', 
+            description: `<p>비숍은 대각선으로 움직입니다. A1 (밝은 칸)에 있는 비숍을 보드의 가장 먼 칸인 H8로 이동시켜 보세요.</p>`,
+            hint: '가장 긴 밝은 칸 대각선을 따라 이동합니다.',
+            expectedMove: { from: 'a1', to: 'h8' }
+        },
         
-        squareToHighlight = null; 
+        // 9단계: 비숍의 행마 (예시 2)
+        {
+            stepId: '1.3.2',
+            title: "9단계 (2): 비숍 (Bishop, B, 3점) - 어두운 칸 대각선 이동",
+            fen: '8/8/8/8/8/8/8/2B5 w - - 0 1', 
+            description: `<p>비숍은 평생 자신이 시작한 색깔의 칸에서만 움직입니다. C1 (어두운 칸)에 있는 비숍을 H6으로 이동시켜 보세요.</p>`,
+            hint: 'C1에서 우측 위 대각선을 따라 H6으로 가세요.',
+            expectedMove: { from: 'c1', to: 'h6' }
+        },
+
+        // 10단계: 비숍의 기물 잡기
+        {
+            stepId: '1.3.3',
+            title: "10단계: 비숍 (Bishop, B, 3점) - 기물 잡기",
+            fen: '8/8/8/3p4/4B3/8/8/8 w - - 0 1', 
+            description: `<p>E4 비숍을 움직여 D5 폰을 잡으세요.</p>`,
+            hint: '비숍은 대각선 경로가 막혀 있지 않아야 합니다. E4에서 D5로 가세요. (기보 표기: Bxd5)',
+            expectedMove: { from: 'e4', to: 'd5' }
+        },
+
+        // 11단계: 룩의 행마 (예시 1)
+        {
+            stepId: '1.4.1',
+            title: "11단계 (1): 룩 (Rook, R, 5점) - 가로 이동",
+            fen: '8/8/8/8/8/8/8/R7 w - - 0 1', 
+            description: `<p>룩은 직선(가로/세로)으로 움직입니다. A1에 있는 룩을 H1으로 이동시켜 보세요.</p>`,
+            hint: '가로(1랭크)를 따라 끝까지 이동합니다.',
+            expectedMove: { from: 'a1', to: 'h1' }
+        },
         
-        $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
-        $status.html(`성공적으로 수를 두었습니다: ${move.san}. 다른 행마도 테스트해보세요.`);
-    }
-}
+        // 11단계: 룩의 행마 (예시 2)
+        {
+            stepId: '1.4.2',
+            title: "11단계 (2): 룩 (Rook, R, 5점) - 세로 이동",
+            fen: '8/8/8/8/8/8/8/R7 w - - 0 1', 
+            description: `<p>A1에 있는 룩을 세로(A파일)를 따라 가장 먼 칸인 A8로 이동시켜 보세요.</p>`,
+            hint: '세로(A파일)를 따라 끝까지 이동합니다.',
+            expectedMove: { from: 'a1', to: 'a8' }
+        },
 
-// 4. 기물 이동 시 (onDrop 함수 - 클릭 이벤트에서만 호출됨)
-function onDrop (source, target) {
-    // 1. 퍼즐 모드 정답 확인
-    if (currentStep && currentStep.expectedMove) {
-        const expected = currentStep.expectedMove;
-        
-        if (source === expected.from && target === expected.to) {
-            const move = game.move({ from: source, to: target, promotion: 'q' });
-            if (move === null) return 'snapback'; 
+        // 12단계: 룩의 기물 잡기
+        {
+            stepId: '1.4.3',
+            title: "12단계: 룩 (Rook, R, 5점) - 기물 잡기",
+            fen: '8/8/8/3p4/3R4/8/8/8 w - - 0 1', 
+            description: `<p>D4 룩을 움직여 D5 폰을 잡으세요.</p>`,
+            hint: '룩은 세로로 한 칸 움직여 D5 폰을 잡습니다. (기보 표기: Rxd5)',
+            expectedMove: { from: 'd4', to: 'd5' }
+        },
 
-            $feedbackPanel.removeClass('feedback-incorrect').addClass('feedback-correct');
-            $status.html('정답입니다! 다음 단계로 이동 버튼을 눌러주세요.');
-            $('#next-step-btn').show(); 
-            
-            return 'correct'; 
-        } else {
-            $feedbackPanel.addClass('feedback-incorrect').removeClass('feedback-correct');
-            $status.html('아닙니다. 다른 행마를 시도하여 정답을 찾아보세요.');
-            
-            return 'snapback'; 
-        }
-    }
+        // 13단계: 퀸과 킹의 행마 (이론)
+        {
+            stepId: '1.5-1.6',
+            title: "13단계: 퀸 (Q, 9점) & 킹 (K)",
+            fen: '8/8/8/3QK3/8/8/8/8 w - - 0 1', 
+            description: `
+                <p>퀸 (Queen, Q, 9점): 룩 + 비숍의 행마법을 모두 가집니다. 즉, 가로, 세로, 대각선으로 원하는 만큼 움직일 수 있습니다. 체스에서 가장 강한 기물입니다.</p>
+                <p>킹 (King, K): 퀸의 행마법을 한 칸씩으로 제한시킨 행마법입니다. 킹이 잡히면 게임이 끝납니다!</p>
+            `,
+            hint: '퀸은 모든 방향으로 이동 가능하며, 킹은 안전이 최우선입니다.',
+            expectedMove: null
+        },
 
-    // 2. 일반 이론 모드 
-    var move = game.move({ from: source, to: target, promotion: 'q' }); 
-    if (move === null) return 'snapback'; 
-    
-    $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
-    $status.html(`성공적으로 수를 두었습니다: ${move.san}. 다른 행마도 테스트해보세요.`);
-    return 'success'; 
-}
+        // 14단계: 특수 규칙 1: 프로모션 - 퍼즐
+        {
+            stepId: '2.1',
+            title: "14단계: 특수 규칙 (1) 프로모션 테스트",
+            fen: '8/P7/8/8/8/8/8/K7 w - - 0 1', 
+            description: `<p>폰이 반대편 끝(8랭크)에 도달하면 승격(프로모션)합니다. A7 폰을 움직여 프로모션을 시도해 보세요. (자동으로 퀸으로 승격됩니다.)</p>`,
+            hint: 'A7 폰을 A8로 움직여 퀸으로 바꾸세요.',
+            expectedMove: { from: 'a7', to: 'a8' }
+        },
 
+        // 15단계: 특수 규칙 2: 앙파상 - 시연/퍼즐
+        {
+            stepId: '2.2',
+            title: "15단계: 특수 규칙 (2) 앙파상 시연",
+            // FEN을 c7 폰이 c5로 움직이기 전으로 설정 (main.js에서 c7-c5 시연)
+            fen: '8/2p5/8/3P4/8/8/8/K7 w - - 0 1', 
+            description: `
+                <p>앙파상(En Passant)은 상대 폰이 처음 2칸 전진했을 때, 바로 옆에 있는 내 폰으로 마치 대각선으로 잡는 것처럼 잡을 수 있는 특수 규칙입니다.</p>
+                <p>잠시 후, 흑이 폰을 C7에서 C5로 2칸 전진하는 모습을 시연합니다. 그 후에 D5 폰을 움직여 앙파상으로 잡아보세요.</p>
+            `,
+            hint: 'D5 폰을 C6으로 이동시켜 앙파상을 실행하세요.',
+            expectedMove: { from: 'd5', to: 'c6' }
+        },
 
-// 5. 다음 단계/레슨 로드 함수
-function loadNextStep() {
-    currentStepIndex++;
-    
-    if (currentStepIndex < currentLesson.steps.length) {
-        removeHighlights(); 
-        squareToHighlight = null; 
-        updateStepContent(); 
-    } else {
-        alert('레슨 1의 모든 단계를 완료했습니다! 감사합니다.');
-        currentStepIndex = 0; 
-        updateStepContent();
-    }
-}
+        // 16단계: 특수 규칙 3: 캐슬링 - 퍼즐 (킹사이드)
+        {
+            stepId: '2.3.1',
+            title: "16단계 (1): 특수 규칙 (3) 캐슬링 테스트 (킹사이드)",
+            fen: 'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1', 
+            description: `
+                <p>캐슬링은 킹과 룩을 동시에 이동시켜 킹을 안전하게 하는 규칙입니다. 킹을 2칸 이동시키면 룩이 자동으로 넘어옵니다. 흰색 킹을 움직여 킹사이드 (짧은) 캐슬링을 시도해 보세요.</p>
+                <ul>
+                    <li>킹사이드 캐슬링: 킹을 E1에서 G1으로 2칸 이동 (룩이 H1에서 F1로 이동)</li>
+                </ul>
+            `,
+            hint: '킹을 E1에서 G1으로 움직입니다.',
+            expectedMove: { from: 'e1', to: 'g1' }
+        },
 
-// 6. 힌트 보기 기능
-function toggleHint() {
-    $hintText.slideToggle();
-}
+        // 17단계: 특수 규칙 3: 캐슬링 - 퍼즐 (퀸사이드)
+        {
+            stepId: '2.3.2',
+            title: "17단계 (2): 특수 규칙 (3) 캐슬링 테스트 (퀸사이드)",
+            fen: 'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1', 
+            description: `
+                <p>이번에는 반대 방향인 퀸사이드로 캐슬링을 시도해 보세요. 퀸사이드 캐슬링은 더 멀리 이동합니다.</p>
+                <ul>
+                    <li>퀸사이드 캐슬링: 킹을 E1에서 C1으로 2칸 이동 (룩이 A1에서 D1로 이동)</li>
+                </ul>
+            `,
+            hint: '킹을 E1에서 C1으로 움직입니다.',
+            expectedMove: { from: 'e1', to: 'c1' }
+        },
 
-// 7. 기물 스냅백 방지 (보드와 게임 상태 동기화)
-function onSnapEnd () {
-    board.position(game.fen());
-}
-
-// =========================================================
-// === 8. 화면 업데이트 (updateStepContent) 함수 ===
-// =========================================================
-
-function updateStepContent() {
-    if (typeof currentLesson === 'undefined') {
-        console.error("ERROR: lessons.js 파일이 로드되지 않았거나 변수 정의에 문제가 있습니다.");
-        $status.html("오류: 레슨 데이터를 찾을 수 없습니다.");
-        return;
-    }
-    
-    currentStep = currentLesson.steps[currentStepIndex];
-
-    $('.chessboard-area h2').text(`[${currentStepIndex + 1}/${currentLesson.steps.length}] ${currentLesson.title} - ${currentStep.title}`);
-    
-    $lessonDesc.html(currentStep.description); 
-    $hintText.html(currentStep.hint);
-    
-    removeHighlights(); 
-    squareToHighlight = null; 
-
-    $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
-    $hintText.slideUp();
-    
-    // 체스보드 설정 및 로드
-    config.position = currentStep.fen;
-    config.draggable = false; 
-    
-    if (board) {
-        board.destroy();
-    }
-    board = Chessboard('board', config);
-    game = new Chess(currentStep.fen); 
-    
-    // 다음 단계 버튼 초기화
-    $('#next-step-btn').hide(); 
-    
-    let defaultStatusMessage = '체스보드에서 행마를 테스트하고 다음 단계로 이동하세요.';
-    
-    if (currentStep.expectedMove) {
-        defaultStatusMessage = '정확한 행마를 찾아 정답을 맞혀야 다음 단계로 넘어갈 수 있습니다.';
-    } else {
-        $('#next-step-btn').show(); 
-    }
-    
-    $status.html(defaultStatusMessage);
-
-    // 앙파상 시연 로직 (Step ID: '2.2')
-    if (currentStep.stepId === '2.2') {
-        $('#next-step-btn').hide(); 
-        
-        setTimeout(function() {
-            board.move('c7-c5');
-            
-            const enPassantFen = '8/8/8/2pP4/8/8/8/K7 w - c6 0 2'; 
-            game.load(enPassantFen); 
-            board.position(enPassantFen); 
-
-            $status.html('흑이 C7에서 C5로 움직였습니다! 이제 D5 폰으로 앙파상을 시도하세요.');
-        }, 1000); 
-    }
-}
-
-
-// 9. 초기화 및 이벤트 리스너 설정
-$(document).ready(function() {
-    
-    $('#next-step-btn').on('click', loadNextStep);
-    
-    updateStepContent(); // 첫 단계 로드
-    
-    // ⭐️ 최종 안정화: document에 이벤트 위임을 사용하여 보드가 재로드되어도 클릭이 작동하도록 보장
-    $(document).off('click', '#board .square-55d63').on('click', '#board .square-55d63', function() {
-        
-        // ⭐ 디버깅 코드: 클릭 이벤트가 발동됨을 확인
-        console.log("✅ Square Click Event Fired!");
-        
-        // ⭐️ getSquareFromDOM 함수 사용
-        var square = getSquareFromDOM(this);
-
-        if (square) {
-            handleSquareClick(square);
-            console.log("Processed square:", square); 
-        } else {
-            console.error("Critical Error: Failed to determine square from DOM. (Check getSquareFromDOM logic)");
-        }
-    });
-
-    $(window).on('resize', function() {
-        if(board) board.resize();
-    });
-});
+        // 18단계: 용어 정리 (1) - 체크메이트 (퍼즐)
+        {
+            stepId: '1.0.3.A',
+            title: "18단계: 용어 정리 (1) - 체크메이트 테스트",
+            fen: 'rnbqkbnr/pppp1ppp/8/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 2', 
+            description: `<p>체크메이트 (#): 킹이 잡힐 상황(체크)을 피할 수 없을 때 발생하며, 게임이 즉시 종료
