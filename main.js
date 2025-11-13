@@ -10,17 +10,20 @@ var $hintText = $('#hint-text');
 var $contentPanel = $('#content-panel');
 
 var squareToHighlight = null; 
+var currentLesson = null; // lessons.js에서 로드됨
+var currentStep = null; 
+var currentStepIndex = 0; 
 
 // 2. 체스보드 초기화 옵션
 var config = {
-    draggable: false, // 드래그 앤 드롭 기능 비활성화
+    draggable: false, 
     position: 'start', 
     onDrop: onDrop,           
     onSnapEnd: onSnapEnd,
     onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png',
     
-    // ⭐️ 애니메이션 시간을 100ms로 강제 단축
+    // ⭐️ 애니메이션 시간을 100ms로 강제 단축 (지연 문제 해결의 핵심)
     animationDuration: 100 
 };
 
@@ -32,7 +35,7 @@ function onDragStart (source, piece, position, orientation) {
     return false; 
 }
 
-// ⭐️ 좌표 추출 함수: DOM 클래스에서 좌표를 확실하게 추출
+// ⭐️ 좌표 추출 함수
 function getSquareFromDOM(element) {
     var classList = $(element).attr('class').split(' ');
     for (var i = 0; i < classList.length; i++) {
@@ -40,8 +43,6 @@ function getSquareFromDOM(element) {
         
         if (className.substring(0, 7) === 'square-') {
             var square = className.substring(7); 
-            
-            // 좌표는 반드시 두 글자(예: 'a1', 'h8')여야 합니다.
             if (square.length === 2 && square.match(/^[a-h][1-8]$/)) { 
                 return square; 
             }
@@ -55,45 +56,34 @@ function highlightSquare (square, isTarget = false) {
     var $square = $('#board .square-' + square);
     
     if (isTarget) {
-        // 이동 가능 칸인 경우 실제 DOM 요소를 삽입합니다.
         if($square.find('.move-dot').length === 0) { 
              $square.append('<div class="move-dot"></div>');
         }
     } 
     else {
-        $square.addClass('highlight-source'); // 선택된 기물 하이라이트
+        $square.addClass('highlight-source'); 
     }
 }
 
 // removeHighlights 함수: 하이라이트와 .move-dot을 모두 제거
 function removeHighlights () {
-    console.log("DEBUG: removeHighlights 호출됨 - 클린업 시작");
-    
-    // 1. 하이라이트 클래스 제거 (.square 요소에서 제거)
     $('#board .square').removeClass('highlight-source highlight-target'); 
-    
-    // 2. 삽입된 점 요소 제거 (.move-dot)
-    // 보강된 로직: 모든 .square 요소 내부의 .move-dot을 찾아 확실하게 제거
     $('#board .square').each(function() {
         $(this).find('.move-dot').remove();
     });
-    
-    console.log("DEBUG: 클린업 완료");
 }
 
 // 칸 클릭을 처리하여 행마를 시도하는 핵심 함수
 function handleSquareClick(square) {
     // 1. 현재 선택된 기물이 없음 (새로운 기물 선택 시도)
     if (squareToHighlight === null) {
-        console.log("DEBUG: 1. 기물 선택 시도:", square);
         if (game.get(square) && game.get(square).color === game.turn()) {
-            // 기물 선택: 하이라이트 및 이동 가능 칸 표시
             squareToHighlight = square;
             highlightSquare(square);
             
             var moves = game.moves({ square: square, verbose: true });
             for (var i = 0; i < moves.length; i++) {
-                highlightSquare(moves[i].to, true); // 이동 가능 칸 점 표시
+                highlightSquare(moves[i].to, true); 
             }
         }
     } 
@@ -102,7 +92,6 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
-            console.log("DEBUG: 2a. 선택 해제 (같은 칸 클릭)");
             removeHighlights();
             squareToHighlight = null;
             return;
@@ -111,25 +100,22 @@ function handleSquareClick(square) {
         // b) 이동 시도
         var source = squareToHighlight;
         var target = square;
-        console.log(`DEBUG: 2b. 이동 시도: ${source} -> ${target}`);
         
         // 이전 칸의 기물 이미지 요소를 찾아서 즉시 제거 (렌더링 최적화 시도)
         $('#board .square-' + source).find('.piece').remove(); 
         
         // 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
-            console.log("DEBUG: 퍼즐 모드 - onDrop 호출");
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
                 board.move(source + '-' + target); 
                 squareToHighlight = null; 
             } else {
-                 // 이동 실패 시: game.fen()으로 기물 위치 즉시 복구
                 board.position(game.fen()); 
             }
             
-            // ⭐️ 클린업 지연 150ms 적용
+            // ⭐️ 클린업 지연 150ms 적용 (애니메이션 시간보다 약간 더 길게 설정)
             setTimeout(removeHighlights, 150); 
             return; 
         }
@@ -138,14 +124,10 @@ function handleSquareClick(square) {
         var move = game.move({ from: source, to: target, promotion: 'q' });
 
         if (move === null) {
-            console.log("DEBUG: 일반 모드 - 유효하지 않은 이동 (null 반환)");
-            
-            // ⭐️ 이동 실패 시: game.fen()으로 기물 위치 즉시 복구 및 선택 변경 시도
             board.position(game.fen()); 
             
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
-                console.log("DEBUG: 유효하지 않지만 다른 기물 선택으로 변경");
                 removeHighlights(); 
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
@@ -154,7 +136,6 @@ function handleSquareClick(square) {
         }
 
         // 유효한 이동인 경우
-        console.log(`DEBUG: 일반 모드 - 유효한 이동 (move.san: ${move.san})`);
         board.move(source + '-' + target);
         
         // ⭐️ 클린업 지연 150ms 적용
@@ -167,9 +148,8 @@ function handleSquareClick(square) {
     }
 }
 
-// 4. 기물 이동 시 (onDrop 함수 - 클릭 이벤트에서만 호출됨)
+// 4. 기물 이동 시 (onDrop 함수)
 function onDrop (source, target) {
-    // 1. 퍼즐 모드 정답 확인
     if (currentStep && currentStep.expectedMove) {
         const expected = currentStep.expectedMove;
         
@@ -190,7 +170,6 @@ function onDrop (source, target) {
         }
     }
 
-    // 2. 일반 이론 모드 
     var move = game.move({ from: source, to: target, promotion: 'q' }); 
     if (move === null) return 'snapback'; 
     
@@ -230,9 +209,9 @@ function onSnapEnd () {
 // =========================================================
 
 function updateStepContent() {
-    if (typeof currentLesson === 'undefined') {
-        console.error("ERROR: lessons.js 파일이 로드되지 않았거나 변수 정의에 문제가 있습니다.");
-        $status.html("오류: 레슨 데이터를 찾을 수 없습니다.");
+    // lessons.js에서 정의된 currentLesson 전역 변수를 사용
+    if (typeof currentLesson === 'undefined' || !currentLesson.steps) { 
+        $status.html("오류: 레슨 데이터를 찾을 수 없거나 형식이 잘못되었습니다.");
         return;
     }
     
@@ -249,17 +228,16 @@ function updateStepContent() {
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
     $hintText.slideUp();
     
-    // 체스보드 설정 및 로드
     config.position = currentStep.fen;
     config.draggable = false; 
     
+    // 기존 보드를 파괴하고 새 보드를 생성
     if (board) {
         board.destroy();
     }
     board = Chessboard('board', config);
     game = new Chess(currentStep.fen); 
     
-    // 다음 단계 버튼 초기화
     $('#next-step-btn').hide(); 
     
     let defaultStatusMessage = '체스보드에서 행마를 테스트하고 다음 단계로 이동하세요.';
@@ -277,8 +255,10 @@ function updateStepContent() {
         $('#next-step-btn').hide(); 
         
         setTimeout(function() {
+            // 흑이 폰을 2칸 전진 (c7-c5)
             board.move('c7-c5');
             
+            // FEN 업데이트: 앙파상으로 잡을 수 있는 상태로 변경 (c6에 앙파상 타겟)
             const enPassantFen = '8/8/8/2pP4/8/8/8/K7 w - c6 0 2'; 
             game.load(enPassantFen); 
             board.position(enPassantFen); 
@@ -294,22 +274,25 @@ $(document).ready(function() {
     
     $('#next-step-btn').on('click', loadNextStep);
     
+    // ⭐️ 보강: currentLesson이 lessons.js에서 로드되었는지 확인
+    if (typeof currentLesson === 'undefined' || !currentLesson.steps) {
+        // 이 오류 메시지가 보이지 않도록 CSS 로드 문제 해결에 집중해야 합니다.
+        $('#board').html('<p style="text-align: center; color: red;">체스보드 로드 실패: lessons.js 파일에 문제가 있습니다.</p>');
+        $status.html("오류: 레슨 데이터를 찾을 수 없거나 형식이 잘못되었습니다.");
+        return;
+    }
+
     updateStepContent(); // 첫 단계 로드
     
-    // ⭐️ 최종 안정화: document에 이벤트 위임을 사용하여 보드가 재로드되어도 클릭이 작동하도록 보장
+    // ⭐️ 최종 안정화: document에 이벤트 위임을 사용하여 클릭이 작동하도록 보장
     $(document).off('click', '#board .square-55d63').on('click', '#board .square-55d63', function() {
         
-        // ⭐ 디버깅 코드: 클릭 이벤트가 발동됨을 확인
-        console.log("✅ Square Click Event Fired!");
-        
-        // ⭐️ getSquareFromDOM 함수 사용
         var square = getSquareFromDOM(this);
 
         if (square) {
             handleSquareClick(square);
-            console.log("Processed square:", square); 
         } else {
-            console.error("Critical Error: Failed to determine square from DOM. (Check getSquareFromDOM logic)");
+            console.error("Critical Error: Failed to determine square from DOM.");
         }
     });
 
