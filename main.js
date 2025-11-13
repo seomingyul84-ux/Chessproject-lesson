@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - setTimeout 제거, 지연 문제 해결)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 강제 리플로우 적용)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -66,13 +66,17 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐️ removeHighlights 함수 최적화 (단일 쿼리 사용)
+// ⭐️ removeHighlights 함수 최종 수정 (강제 리플로우 추가)
 function removeHighlights () {
     // 1. 모든 '.square'에서 하이라이트 클래스 제거
     $('#board .square').removeClass('highlight-source highlight-target'); 
     
     // 2. 모든 '.move-dot' 요소를 단일 쿼리로 찾아서 즉시 제거
     $('#board .square .move-dot').remove();
+    
+    // ⭐️ 3. 강제 리플로우 유도: 브라우저에게 DOM 변경 사항을 즉시 화면에 반영하도록 강제
+    // 이 코드가 딜레이 문제의 최종 해결책이 될 것입니다.
+    $('#board')[0].offsetHeight; 
 }
 
 // 칸 클릭을 처리하여 행마를 시도하는 핵심 함수
@@ -114,7 +118,7 @@ function handleSquareClick(square) {
                 board.position(game.fen()); 
             }
             
-            // ⭐️ 수정: setTimeout 제거 -> 즉시 호출 (지연 해결)
+            // ⭐️ 즉시 클린업 (setTimeout 제거)
             removeHighlights(); 
             return; 
         }
@@ -137,7 +141,7 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         board.move(source + '-' + target);
         
-        // ⭐️ 수정: setTimeout 제거 -> 즉시 호출 (지연 해결)
+        // ⭐️ 즉시 클린업 (setTimeout 제거)
         removeHighlights(); 
         
         squareToHighlight = null; 
