@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 애니메이션 0ms 및 클린업 최적화 적용)
+// main.js 파일 전체 코드 (최종 안정화 버전 - setTimeout 제거, 지연 문제 해결)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -23,7 +23,7 @@ var config = {
     onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png',
     
-    // ⭐️ 최종: 애니메이션 시간을 0ms로 설정하여 즉시 이동
+    // ⭐️ 애니메이션 시간을 0ms로 설정 (즉시 이동)
     animationDuration: 0 
 };
 
@@ -66,7 +66,7 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐️ removeHighlights 함수 최적화 (지연 문제 해결의 핵심)
+// ⭐️ removeHighlights 함수 최적화 (단일 쿼리 사용)
 function removeHighlights () {
     // 1. 모든 '.square'에서 하이라이트 클래스 제거
     $('#board .square').removeClass('highlight-source highlight-target'); 
@@ -103,9 +103,6 @@ function handleSquareClick(square) {
         var source = squareToHighlight;
         var target = square;
         
-        // 이전 칸의 기물 이미지 요소를 찾아서 즉시 제거 (렌더링 최적화 시도)
-        $('#board .square-' + source).find('.piece').remove(); 
-        
         // 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
             const result = onDrop(source, target);
@@ -117,8 +114,8 @@ function handleSquareClick(square) {
                 board.position(game.fen()); 
             }
             
-            // ⭐️ 클린업 지연 0ms 적용
-            setTimeout(removeHighlights, 0); 
+            // ⭐️ 수정: setTimeout 제거 -> 즉시 호출 (지연 해결)
+            removeHighlights(); 
             return; 
         }
         
@@ -140,8 +137,8 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         board.move(source + '-' + target);
         
-        // ⭐️ 클린업 지연 0ms 적용
-        setTimeout(removeHighlights, 0); 
+        // ⭐️ 수정: setTimeout 제거 -> 즉시 호출 (지연 해결)
+        removeHighlights(); 
         
         squareToHighlight = null; 
         
