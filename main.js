@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 애니메이션 100ms 단축 및 클린업 지연 150ms 적용)
+// main.js 파일 전체 코드 (최종 안정화 버전 - currentLesson 초기화 제거)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -10,7 +10,8 @@ var $hintText = $('#hint-text');
 var $contentPanel = $('#content-panel');
 
 var squareToHighlight = null; 
-var currentLesson = null; // lessons.js에서 로드됨
+// ⭐️ 이 줄은 제거되었습니다! (lessons.js의 전역 변수를 그대로 사용)
+// var currentLesson = null; 
 var currentStep = null; 
 var currentStepIndex = 0; 
 
@@ -23,7 +24,7 @@ var config = {
     onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png',
     
-    // ⭐️ 애니메이션 시간을 100ms로 강제 단축 (지연 문제 해결의 핵심)
+    // ⭐️ 애니메이션 시간을 100ms로 강제 단축
     animationDuration: 100 
 };
 
@@ -274,9 +275,8 @@ $(document).ready(function() {
     
     $('#next-step-btn').on('click', loadNextStep);
     
-    // ⭐️ 보강: currentLesson이 lessons.js에서 로드되었는지 확인
+    // ⭐️ 오류 검증: currentLesson 변수의 존재 유무만 확인합니다.
     if (typeof currentLesson === 'undefined' || !currentLesson.steps) {
-        // 이 오류 메시지가 보이지 않도록 CSS 로드 문제 해결에 집중해야 합니다.
         $('#board').html('<p style="text-align: center; color: red;">체스보드 로드 실패: lessons.js 파일에 문제가 있습니다.</p>');
         $status.html("오류: 레슨 데이터를 찾을 수 없거나 형식이 잘못되었습니다.");
         return;
