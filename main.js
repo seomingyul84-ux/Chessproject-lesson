@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - requestAnimationFrame 적용)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 비동기 분할 및 재구성)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -66,26 +66,29 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐️ removeHighlights 함수 최종 수정 (requestAnimationFrame 적용)
+// ⭐️ removeHighlights 함수 최종 수정 (비동기 분할 및 재구성)
 function removeHighlights () {
-    // ⭐️ requestAnimationFrame으로 래핑하여 브라우저의 다음 페인트 직전에 실행되도록 보장
-    window.requestAnimationFrame(function() {
-        // 클린업 실행
-        $('#board .square').removeClass('highlight-source highlight-target'); 
+    // CSS Transition 제거는 여전히 유효할 수 있으므로 유지
+    $('#board .piece').css('transition', 'none'); 
+
+    // 1단계: 하이라이트 클래스만 제거 (가벼운 작업)
+    $('#board .square').removeClass('highlight-source highlight-target'); 
+    
+    // ⭐️ 2단계: 0ms setTimeout으로 작업을 분할하여 브라우저에 렌더링 기회 제공
+    // 이 분할이 렌더링 지연 문제를 해결할 가능성이 있습니다.
+    setTimeout(function() {
+        // 3단계: DOM 요소(.move-dot) 제거 (무거운 작업)
         $('#board .square .move-dot').remove();
-        
-        // 추가 조치: CSS Transition을 0ms로 강제 설정하여 지연 방지 (안전 장치)
-        // 렌더링 지연이 CSS 애니메이션 완료를 기다리는 것으로 오해할 경우를 대비
-        $('#board .piece').css('transition', 'none'); 
-        
-        // ⭐️ 강제 리플로우 유도 (이전 단계의 코드 유지)
-        $('#board')[0].offsetHeight; 
-        
-        // 100ms 후 transition 속성을 다시 원래대로 복구 (추후 이동 애니메이션을 위해)
+
+        // 4단계: CSS Transition 복구
         setTimeout(function() {
             $('#board .piece').css('transition', ''); // CSS 파일 설정을 따름
         }, 100);
-    });
+        
+        // ⭐️ F12 없이도 클린업이 되도록 강제 리플로우 코드를 최종적으로 제거합니다.
+        // 분할 작업이 성공하면 이 코드는 불필요합니다.
+        // $('#board')[0].offsetHeight; 
+    }, 0);
 }
 
 // 칸 클릭을 처리하여 행마를 시도하는 핵심 함수
@@ -107,7 +110,8 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
-            removeHighlights();
+            // ⭐️ 클린업 함수는 setTimeout으로 호출 (분할된 removeHighlights() 함수와 동기화)
+            setTimeout(removeHighlights, 0); 
             squareToHighlight = null;
             return;
         }
@@ -127,8 +131,8 @@ function handleSquareClick(square) {
                 board.position(game.fen()); 
             }
             
-            // ⭐️ 즉시 클린업 (setTimeout 제거)
-            removeHighlights(); 
+            // ⭐️ 클린업 함수는 setTimeout으로 호출 (분할된 removeHighlights() 함수와 동기화)
+            setTimeout(removeHighlights, 0); 
             return; 
         }
         
@@ -140,7 +144,7 @@ function handleSquareClick(square) {
             
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
-                removeHighlights(); 
+                setTimeout(removeHighlights, 0); 
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
             } 
@@ -150,8 +154,8 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         board.move(source + '-' + target);
         
-        // ⭐️ 즉시 클린업 (setTimeout 제거)
-        removeHighlights(); 
+        // ⭐️ 클린업 함수는 setTimeout으로 호출 (분할된 removeHighlights() 함수와 동기화)
+        setTimeout(removeHighlights, 0); 
         
         squareToHighlight = null; 
         
@@ -197,7 +201,7 @@ function loadNextStep() {
     currentStepIndex++;
     
     if (currentStepIndex < currentLesson.steps.length) {
-        removeHighlights(); 
+        setTimeout(removeHighlights, 0); // ⭐️ 클린업 함수는 setTimeout으로 호출
         squareToHighlight = null; 
         updateStepContent(); 
     } else {
@@ -236,7 +240,7 @@ function updateStepContent() {
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
-    removeHighlights(); 
+    setTimeout(removeHighlights, 0); // ⭐️ 클린업 함수는 setTimeout으로 호출
     squareToHighlight = null; 
 
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
