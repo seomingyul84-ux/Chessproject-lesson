@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - currentLesson 초기화 제거)
+// main.js 파일 전체 코드 (최종 안정화 버전 - 애니메이션 0ms 및 클린업 최적화 적용)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -10,8 +10,7 @@ var $hintText = $('#hint-text');
 var $contentPanel = $('#content-panel');
 
 var squareToHighlight = null; 
-// ⭐️ 이 줄은 제거되었습니다! (lessons.js의 전역 변수를 그대로 사용)
-// var currentLesson = null; 
+// var currentLesson; // lessons.js에서 정의됨
 var currentStep = null; 
 var currentStepIndex = 0; 
 
@@ -24,8 +23,8 @@ var config = {
     onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png',
     
-    // ⭐️ 애니메이션 시간을 100ms로 강제 단축
-    animationDuration: 100 
+    // ⭐️ 최종: 애니메이션 시간을 0ms로 설정하여 즉시 이동
+    animationDuration: 0 
 };
 
 // =========================================================
@@ -33,6 +32,7 @@ var config = {
 // =========================================================
 
 function onDragStart (source, piece, position, orientation) {
+    // 퍼즐 모드일 때는 드래그를 막고 클릭으로만 처리
     return false; 
 }
 
@@ -66,12 +66,13 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// removeHighlights 함수: 하이라이트와 .move-dot을 모두 제거
+// ⭐️ removeHighlights 함수 최적화 (지연 문제 해결의 핵심)
 function removeHighlights () {
+    // 1. 모든 '.square'에서 하이라이트 클래스 제거
     $('#board .square').removeClass('highlight-source highlight-target'); 
-    $('#board .square').each(function() {
-        $(this).find('.move-dot').remove();
-    });
+    
+    // 2. 모든 '.move-dot' 요소를 단일 쿼리로 찾아서 즉시 제거
+    $('#board .square .move-dot').remove();
 }
 
 // 칸 클릭을 처리하여 행마를 시도하는 핵심 함수
@@ -116,8 +117,8 @@ function handleSquareClick(square) {
                 board.position(game.fen()); 
             }
             
-            // ⭐️ 클린업 지연 150ms 적용 (애니메이션 시간보다 약간 더 길게 설정)
-            setTimeout(removeHighlights, 150); 
+            // ⭐️ 클린업 지연 0ms 적용
+            setTimeout(removeHighlights, 0); 
             return; 
         }
         
@@ -139,8 +140,8 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         board.move(source + '-' + target);
         
-        // ⭐️ 클린업 지연 150ms 적용
-        setTimeout(removeHighlights, 150); 
+        // ⭐️ 클린업 지연 0ms 적용
+        setTimeout(removeHighlights, 0); 
         
         squareToHighlight = null; 
         
@@ -155,7 +156,8 @@ function onDrop (source, target) {
         const expected = currentStep.expectedMove;
         
         if (source === expected.from && target === expected.to) {
-            const move = game.move({ from: source, to: target, promotion: 'q' });
+            // promotion: 'q'를 통해 폰이 8랭크에 도달하면 퀸으로 자동 승격
+            const move = game.move({ from: source, to: target, promotion: 'q' }); 
             if (move === null) return 'snapback'; 
 
             $feedbackPanel.removeClass('feedback-incorrect').addClass('feedback-correct');
@@ -202,6 +204,7 @@ function toggleHint() {
 
 // 7. 기물 스냅백 방지 (보드와 게임 상태 동기화)
 function onSnapEnd () {
+    // 애니메이션이 0ms이므로 즉시 동기화됩니다.
     board.position(game.fen());
 }
 
@@ -230,7 +233,9 @@ function updateStepContent() {
     $hintText.slideUp();
     
     config.position = currentStep.fen;
-    config.draggable = false; 
+    
+    // 퍼즐(expectedMove)이 있을 때만 클릭으로 이동이 가능하게 설정
+    config.draggable = !!currentStep.expectedMove; 
     
     // 기존 보드를 파괴하고 새 보드를 생성
     if (board) {
@@ -246,6 +251,7 @@ function updateStepContent() {
     if (currentStep.expectedMove) {
         defaultStatusMessage = '정확한 행마를 찾아 정답을 맞혀야 다음 단계로 넘어갈 수 있습니다.';
     } else {
+        // 이론 단계에서는 바로 다음 단계로 이동 가능
         $('#next-step-btn').show(); 
     }
     
@@ -260,7 +266,8 @@ function updateStepContent() {
             board.move('c7-c5');
             
             // FEN 업데이트: 앙파상으로 잡을 수 있는 상태로 변경 (c6에 앙파상 타겟)
-            const enPassantFen = '8/8/8/2pP4/8/8/8/K7 w - c6 0 2'; 
+            // '8/8/8/2pP4/8/8/8/K7 w - c6 0 2'
+            const enPassantFen = game.fen();
             game.load(enPassantFen); 
             board.position(enPassantFen); 
 
@@ -295,6 +302,9 @@ $(document).ready(function() {
             console.error("Critical Error: Failed to determine square from DOM.");
         }
     });
+    
+    // 힌트 버튼 클릭 이벤트 연결
+    $('#toggle-hint-btn').on('click', toggleHint);
 
     $(window).on('resize', function() {
         if(board) board.resize();
