@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 강제 리플로우 적용)
+// main.js 파일 전체 코드 (최종 안정화 버전 - requestAnimationFrame 적용)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -66,17 +66,26 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐️ removeHighlights 함수 최종 수정 (강제 리플로우 추가)
+// ⭐️ removeHighlights 함수 최종 수정 (requestAnimationFrame 적용)
 function removeHighlights () {
-    // 1. 모든 '.square'에서 하이라이트 클래스 제거
-    $('#board .square').removeClass('highlight-source highlight-target'); 
-    
-    // 2. 모든 '.move-dot' 요소를 단일 쿼리로 찾아서 즉시 제거
-    $('#board .square .move-dot').remove();
-    
-    // ⭐️ 3. 강제 리플로우 유도: 브라우저에게 DOM 변경 사항을 즉시 화면에 반영하도록 강제
-    // 이 코드가 딜레이 문제의 최종 해결책이 될 것입니다.
-    $('#board')[0].offsetHeight; 
+    // ⭐️ requestAnimationFrame으로 래핑하여 브라우저의 다음 페인트 직전에 실행되도록 보장
+    window.requestAnimationFrame(function() {
+        // 클린업 실행
+        $('#board .square').removeClass('highlight-source highlight-target'); 
+        $('#board .square .move-dot').remove();
+        
+        // 추가 조치: CSS Transition을 0ms로 강제 설정하여 지연 방지 (안전 장치)
+        // 렌더링 지연이 CSS 애니메이션 완료를 기다리는 것으로 오해할 경우를 대비
+        $('#board .piece').css('transition', 'none'); 
+        
+        // ⭐️ 강제 리플로우 유도 (이전 단계의 코드 유지)
+        $('#board')[0].offsetHeight; 
+        
+        // 100ms 후 transition 속성을 다시 원래대로 복구 (추후 이동 애니메이션을 위해)
+        setTimeout(function() {
+            $('#board .piece').css('transition', ''); // CSS 파일 설정을 따름
+        }, 100);
+    });
 }
 
 // 칸 클릭을 처리하여 행마를 시도하는 핵심 함수
