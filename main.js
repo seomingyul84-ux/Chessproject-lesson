@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (최종 안정화 버전 - 클린업 대신 강제 보드 초기화)
+// main.js 파일 전체 코드 (CSS 숨김 처리 적용 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -66,10 +66,22 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐️ removeHighlights 함수 (사용하지 않음)
+// ⭐️ removeHighlights 함수 최종 수정 (CSS 숨김 처리 적용)
 function removeHighlights () {
-    // F12 문제 회피를 위해 이 함수를 사용하지 않고, 
-    // updateStepContent() 호출로 보드 초기화를 대신합니다.
+    // 1. 하이라이트 클래스를 제거합니다.
+    $('#board .square').removeClass('highlight-source highlight-target'); 
+    
+    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 즉시 사라지게 합니다.
+    // 이는 DOM 조작 대신 CSS 렌더링을 강제하는 최후의 수단입니다.
+    $('#board').addClass('hide-highlights'); 
+    
+    // 3. .move-dot 요소를 제거하는 작업을 비동기로 분리합니다.
+    setTimeout(function() {
+        $('#board .square .move-dot').remove();
+        
+        // 4. 숨김 클래스를 제거합니다.
+        $('#board').removeClass('hide-highlights');
+    }, 0);
 }
 
 
@@ -92,8 +104,7 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
-            // ⭐️ 클린업 대신, 보드를 강제로 초기화
-            setTimeout(updateStepContent, 0); 
+            setTimeout(removeHighlights, 0); 
             squareToHighlight = null;
             return;
         }
@@ -107,22 +118,14 @@ function handleSquareClick(square) {
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
-                // board.move(source + '-' + target); 
+                board.move(source + '-' + target); 
                 squareToHighlight = null; 
-                
-                // ⭐️ 정답을 맞혔을 경우: 보드를 강제로 초기화
-                if (result === 'correct') {
-                    // 100ms 딜레이를 주어 피드백 메시지를 읽을 시간을 줌
-                    setTimeout(updateStepContent, 100); 
-                } else {
-                     board.position(game.fen());
-                }
-
             } else {
                 board.position(game.fen()); 
             }
             
-            // removeHighlights() 호출 제거
+            // ⭐️ 클린업
+            setTimeout(removeHighlights, 0); 
             return; 
         }
         
@@ -134,10 +137,9 @@ function handleSquareClick(square) {
             
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
-                // ⭐️ 클린업 대신, 보드를 강제로 초기화
-                setTimeout(updateStepContent, 0); 
+                setTimeout(removeHighlights, 0); 
                 squareToHighlight = null; 
-                // handleSquareClick(square); // 선택 변경 로직 제거 (초기화로 대체)
+                handleSquareClick(square); // 선택 변경을 위해 재귀 호출
             } 
             return;
         }
@@ -145,8 +147,8 @@ function handleSquareClick(square) {
         // 유효한 이동인 경우
         board.move(source + '-' + target);
         
-        // ⭐️ 클린업 대신, 보드를 강제로 초기화
-        setTimeout(updateStepContent, 0); 
+        // ⭐️ 클린업
+        setTimeout(removeHighlights, 0); 
         
         squareToHighlight = null; 
         
@@ -192,6 +194,7 @@ function loadNextStep() {
     currentStepIndex++;
     
     if (currentStepIndex < currentLesson.steps.length) {
+        setTimeout(removeHighlights, 0);
         squareToHighlight = null; 
         updateStepContent(); 
     } else {
@@ -230,7 +233,7 @@ function updateStepContent() {
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
-    // removeHighlights() 호출 제거
+    setTimeout(removeHighlights, 0); // ⭐️ 클린업
     squareToHighlight = null; 
 
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
@@ -241,7 +244,7 @@ function updateStepContent() {
     // 퍼즐(expectedMove)이 있을 때만 클릭으로 이동이 가능하게 설정
     config.draggable = !!currentStep.expectedMove; 
     
-    // ⭐️ 기존 보드를 파괴하고 새 보드를 생성 (강제 클린업 효과)
+    // 기존 보드를 파괴하고 새 보드를 생성
     if (board) {
         board.destroy();
     }
@@ -314,3 +317,4 @@ $(document).ready(function() {
         if(board) board.resize();
     });
 });
+            
