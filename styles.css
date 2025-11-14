@@ -159,11 +159,11 @@ body {
 /* 4. 체스보드 행마 표시 하이라이트 (move-dot 사용) */
 /* ========================================= */
 
-.highlight-source {
-    /* 선택된 기물 칸 하이라이트 */
+/* ⭐️ 삭제: 배경색 하이라이트는 main.js에서 사용하지 않기로 했습니다. */
+/* .highlight-source {
     box-shadow: inset 0 0 10px #f68b37 !important; 
     z-index: 5 !important;
-}
+} */
 
 /* 🎯 main.js에서 삽입하는 점 요소 (.move-dot)의 스타일 */
 .move-dot {
@@ -183,4 +183,11 @@ body {
     
     border-radius: 50%; /* 원 모양 */
     background-color: rgba(60, 179, 113, 0.7); /* 색상 */
+}
+
+/* ⭐️⭐️⭐️ 중요: 브라우저 지연 우회를 위한 클린업 클래스 추가 ⭐️⭐️⭐️ */
+/* 이 클래스가 board div에 추가되면 모든 하이라이트와 닷을 즉시 숨깁니다. */
+.hide-highlights .highlight-source,
+.hide-highlights .move-dot {
+    display: none !important;
 }
