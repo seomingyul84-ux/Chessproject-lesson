@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (CSS 숨김 처리 적용 버전)
+// main.js 파일 전체 코드 (CSS Hide + Controlled Async 적용 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -66,22 +66,23 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐️ removeHighlights 함수 최종 수정 (CSS 숨김 처리 적용)
+// ⭐️ removeHighlights 함수 (시각적 즉시 처리 + 지연된 DOM 제거)
 function removeHighlights () {
     // 1. 하이라이트 클래스를 제거합니다.
     $('#board .square').removeClass('highlight-source highlight-target'); 
     
-    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 즉시 사라지게 합니다.
-    // 이는 DOM 조작 대신 CSS 렌더링을 강제하는 최후의 수단입니다.
+    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 CSS를 통해 즉시 사라지게 합니다.
+    // 💡 사용자는 이 순간 클린업이 완료된 것처럼 느낍니다.
     $('#board').addClass('hide-highlights'); 
     
-    // 3. .move-dot 요소를 제거하는 작업을 비동기로 분리합니다.
+    // 3. .move-dot 요소를 DOM에서 제거하는 느린 작업은 50ms 후로 분리합니다.
+    // 이 작업이 느리게 실행되어도 이미 닷은 숨겨졌으므로 괜찮습니다.
     setTimeout(function() {
         $('#board .square .move-dot').remove();
         
-        // 4. 숨김 클래스를 제거합니다.
+        // 4. 숨김 클래스를 제거합니다. (다음 하이라이트를 위해)
         $('#board').removeClass('hide-highlights');
-    }, 0);
+    }, 50); // 50ms의 짧은 지연을 주어 메인 스레드에 부담을 덜어줍니다.
 }
 
 
@@ -91,6 +92,9 @@ function handleSquareClick(square) {
     if (squareToHighlight === null) {
         if (game.get(square) && game.get(square).color === game.turn()) {
             squareToHighlight = square;
+            // ⭐️ 클린업을 먼저 실행 (이전 선택 잔재 제거)
+            removeHighlights(); 
+            
             highlightSquare(square);
             
             var moves = game.moves({ square: square, verbose: true });
@@ -104,7 +108,8 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
-            setTimeout(removeHighlights, 0); 
+            // ⭐️ 클린업
+            removeHighlights(); 
             squareToHighlight = null;
             return;
         }
@@ -125,7 +130,7 @@ function handleSquareClick(square) {
             }
             
             // ⭐️ 클린업
-            setTimeout(removeHighlights, 0); 
+            removeHighlights(); 
             return; 
         }
         
@@ -137,7 +142,8 @@ function handleSquareClick(square) {
             
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
-                setTimeout(removeHighlights, 0); 
+                // ⭐️ 클린업
+                removeHighlights(); 
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
             } 
@@ -148,7 +154,7 @@ function handleSquareClick(square) {
         board.move(source + '-' + target);
         
         // ⭐️ 클린업
-        setTimeout(removeHighlights, 0); 
+        removeHighlights(); 
         
         squareToHighlight = null; 
         
@@ -194,7 +200,7 @@ function loadNextStep() {
     currentStepIndex++;
     
     if (currentStepIndex < currentLesson.steps.length) {
-        setTimeout(removeHighlights, 0);
+        removeHighlights(); // ⭐️ 클린업
         squareToHighlight = null; 
         updateStepContent(); 
     } else {
@@ -233,7 +239,7 @@ function updateStepContent() {
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
-    setTimeout(removeHighlights, 0); // ⭐️ 클린업
+    removeHighlights(); // ⭐️ 클린업
     squareToHighlight = null; 
 
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
@@ -317,4 +323,3 @@ $(document).ready(function() {
         if(board) board.resize();
     });
 });
-            
