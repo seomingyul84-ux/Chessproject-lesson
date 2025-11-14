@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (DOM 제거 우회 적용 버전)
+// main.js 파일 전체 코드 (배경색 하이라이트 제거 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -52,35 +52,35 @@ function getSquareFromDOM(element) {
     return null; 
 }
 
-// highlightSquare 함수: .move-dot을 삽입하여 점 표시
+// highlightSquare 함수: .move-dot만 보이게 수정
 function highlightSquare (square, isTarget = false) {
     var $square = $('#board .square-' + square);
     
     if (isTarget) {
-        // 이미 .move-dot이 존재하면 숨김 속성을 제거하고 다시 보이게 합니다.
+        // 이동 가능한 칸에 닷 추가
         var $dot = $square.find('.move-dot');
         if($dot.length === 0) { 
              $square.append('<div class="move-dot"></div>');
-        } else {
-             // ⭐️ 핵심 수정: 숨겨진 .move-dot을 다시 보이게 합니다.
-             $dot.css('display', ''); 
-        }
+        } 
     } 
-    else {
-        $square.addClass('highlight-source'); 
-    }
+    // ⭐️ 선택된 기물 칸에 배경색 하이라이트를 추가하는 로직(else 블록)을 제거했습니다.
 }
 
-// ⭐️ removeHighlights 함수 최종 수정 (느린 DOM 제거 작업 완전히 우회)
+// ⭐️ removeHighlights 함수: 배경색 제거 로직 간소화
 function removeHighlights () {
-    // 1. 하이라이트 클래스를 제거합니다.
-    $('#board .square').removeClass('highlight-source highlight-target'); 
+    // 1. 이전 대상 칸의 하이라이트 클래스만 제거합니다.
+    $('#board .square').removeClass('highlight-target'); 
     
-    // 2. 모든 .move-dot 요소를 즉시 숨깁니다.
-    // 💡 브라우저가 가장 싫어하는 DOM 제거(`.remove()`) 대신, CSS 변경(`.css()`)을 사용하여 부하를 줄입니다.
-    $('#board .square .move-dot').css('display', 'none'); 
+    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 CSS를 통해 즉시 사라지게 합니다.
+    $('#board').addClass('hide-highlights'); 
     
-    // 이 방식은 setTimeout을 사용할 필요가 없으며, 모두 동기적으로 실행됩니다.
+    // 3. 느린 DOM 제거 작업은 50ms 후로 분리합니다.
+    setTimeout(function() {
+        $('#board .square .move-dot').remove(); 
+        
+        // 4. 숨김 클래스를 제거합니다.
+        $('#board').removeClass('hide-highlights');
+    }, 50); 
 }
 
 
@@ -93,11 +93,11 @@ function handleSquareClick(square) {
             // ⭐️ 클린업
             removeHighlights(); 
             
-            highlightSquare(square);
+            highlightSquare(square); // 선택된 기물은 하이라이트하지 않음 (점은 안 찍힘)
             
             var moves = game.moves({ square: square, verbose: true });
             for (var i = 0; i < moves.length; i++) {
-                highlightSquare(moves[i].to, true); 
+                highlightSquare(moves[i].to, true); // 이동 가능한 칸에 점 찍기
             }
         }
     } 
