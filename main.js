@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (앙파상 셋업 로직 수정 버전)
+// main.js 파일 전체 코드 (최종 통합 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -10,7 +10,8 @@ var $hintText = $('#hint-text');
 var $contentPanel = $('#content-panel');
 
 var squareToHighlight = null; 
-// var currentLesson; // lessons.js에서 정의됨
+// ⚠️ 주의: currentLesson과 allLessons는 lessons.js 파일에서 정의/초기화되어야 합니다.
+// 예시: let currentLesson = allLessons[0];
 var currentStep = null; 
 var currentStepIndex = 0; 
 
@@ -23,7 +24,7 @@ var config = {
     onDragStart: onDragStart,  
     pieceTheme: 'img/{piece}.png',
     
-    // ⭐️ 애니메이션 시간을 0ms로 설정 (즉시 이동)
+    // 애니메이션 시간을 0ms로 설정 (즉시 이동)
     animationDuration: 0 
 };
 
@@ -36,7 +37,7 @@ function onDragStart (source, piece, position, orientation) {
     return false; 
 }
 
-// ⭐️ 좌표 추출 함수
+// 좌표 추출 함수
 function getSquareFromDOM(element) {
     var classList = $(element).attr('class').split(' ');
     for (var i = 0; i < classList.length; i++) {
@@ -63,25 +64,20 @@ function highlightSquare (square, isTarget = false) {
              $square.append('<div class="move-dot"></div>');
         } 
     } 
-    // 배경색 하이라이트는 제거되었습니다.
 }
 
-// ⭐️ 닷 즉시 숨김 함수 (선택 해제 시 사용)
+// 닷 즉시 숨김 함수 (선택 해제 시 사용)
 function instantHideDots() {
-    // 1. 하이라이트 잔상 방지를 위해 .highlight-target 클래스는 여전히 제거합니다.
     $('#board .square').removeClass('highlight-target'); 
-    
-    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 CSS를 통해 즉시 사라지게 합니다.
     $('#board').addClass('hide-highlights'); 
     
-    // 3. (옵션) 비동기적으로 느리게 DOM 제거를 시도합니다. (선택 해제 시에만 적용)
     setTimeout(function() {
         $('#board .square .move-dot').remove(); 
         $('#board').removeClass('hide-highlights');
     }, 50); 
 }
 
-// ⭐️ 보드 리셋 클린업 함수 (강제 새로고침 - 이동 시 사용)
+// 보드 리셋 클린업 함수 (강제 새로고침 - 이동 시 사용)
 function resetBoardForCleanup() {
     // 1. 기존 보드 파괴
     if (board) {
@@ -97,9 +93,31 @@ function resetBoardForCleanup() {
 function handleSquareClick(square) {
     // 1. 현재 선택된 기물이 없음 (새로운 기물 선택 시도)
     if (squareToHighlight === null) {
-        // ⭐️ 새로운 선택 시도 전, 이전 잔상 제거 (resetBoardForCleanup이 아닌 instantHideDots 사용)
         instantHideDots();
         
+        // ⭐️⭐️⭐️ 좌표 퍼즐 예외 처리 시작 ⭐️⭐️⭐️
+        // (기물 선택 전에 처리해야 클릭만으로 정답 판정 가능)
+        if (currentStep && currentStep.expectedMove && 
+            currentStep.expectedMove.from === currentStep.expectedMove.to) {
+            
+            const expectedSquare = currentStep.expectedMove.from;
+
+            if (square === expectedSquare) {
+                // 정답 칸을 클릭한 경우
+                $feedbackPanel.removeClass('feedback-incorrect').addClass('feedback-correct');
+                $status.html('정답입니다! 정확히 좌표를 찾았습니다. 다음 단계로 이동 버튼을 눌러주세요.');
+                $('#next-step-btn').show(); 
+                return;
+            } else {
+                // 오답 칸을 클릭한 경우
+                $feedbackPanel.addClass('feedback-incorrect').removeClass('feedback-correct');
+                $status.html(`아닙니다. ${expectedSquare.toUpperCase()} 칸을 찾아보세요.`);
+                return;
+            }
+        }
+        // ⭐️⭐️⭐️ 좌표 퍼즐 예외 처리 끝 ⭐️⭐️⭐️
+        
+        // 기물 선택 로직
         if (game.get(square) && game.get(square).color === game.turn()) {
             squareToHighlight = square;
             
@@ -116,7 +134,6 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
-            // ⭐️ 선택 해제는 가장 빨라야 함: 닷 즉시 숨김만 사용
             instantHideDots(); 
             squareToHighlight = null;
             return;
@@ -128,13 +145,16 @@ function handleSquareClick(square) {
         
         // 1. 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
+            
+            // from === to 인 좌표 퍼즐은 이미 위에서 처리되었음
+            
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
                 // 💡 이동 성공 시:
                 board.move(source + '-' + target); 
                 squareToHighlight = null; 
-                resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋 (이동 시 최종 해결책) ⭐️⭐️
+                resetBoardForCleanup(); 
             } else {
                 board.position(game.fen()); 
             }
@@ -149,7 +169,7 @@ function handleSquareClick(square) {
             
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
-                instantHideDots(); // 닷 즉시 숨김
+                instantHideDots(); 
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
             } 
@@ -159,7 +179,7 @@ function handleSquareClick(square) {
         // 3. 유효한 이동인 경우
         board.move(source + '-' + target);
         
-        resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋 (이동 시 최종 해결책) ⭐️⭐️
+        resetBoardForCleanup(); 
         
         squareToHighlight = null; 
         
@@ -171,10 +191,11 @@ function handleSquareClick(square) {
 // 4. 기물 이동 시 (onDrop 함수)
 function onDrop (source, target) {
     if (currentStep && currentStep.expectedMove) {
+        // 좌표 퍼즐 (from === to)은 여기서 처리되지 않음
+
         const expected = currentStep.expectedMove;
         
         if (source === expected.from && target === expected.to) {
-            // promotion: 'q'를 통해 폰이 8랭크에 도달하면 퀸으로 자동 승격
             const move = game.move({ from: source, to: target, promotion: 'q' }); 
             if (move === null) return 'snapback'; 
 
@@ -205,13 +226,36 @@ function loadNextStep() {
     currentStepIndex++;
     
     if (currentStepIndex < currentLesson.steps.length) {
-        resetBoardForCleanup(); // ⭐️ 클린업
+        // 현재 레슨의 다음 단계로 이동
+        resetBoardForCleanup(); 
         squareToHighlight = null; 
         updateStepContent(); 
     } else {
-        alert('레슨 1의 모든 단계를 완료했습니다! 감사합니다.');
-        currentStepIndex = 0; 
-        updateStepContent();
+        // ⭐️ 현재 레슨을 모두 완료하면 다음 레슨으로 이동
+        // allLessons 배열이 lessons.js에 정의되어 있어야 함
+        if (typeof allLessons === 'undefined' || !Array.isArray(allLessons)) {
+             alert('모든 레슨 단계를 완료했습니다. (lessons.js의 allLessons 정의를 확인하세요)');
+             return;
+        }
+        
+        const currentLessonIndex = allLessons.findIndex(lesson => lesson.lessonId === currentLesson.lessonId);
+        
+        if (currentLessonIndex < allLessons.length - 1) {
+            // 다음 레슨으로 이동
+            currentLesson = allLessons[currentLessonIndex + 1];
+            currentStepIndex = 0;
+            alert(`${currentLesson.title} 레슨을 시작합니다!`);
+            resetBoardForCleanup();
+            squareToHighlight = null; 
+            updateStepContent();
+        } else {
+            // 모든 레슨 완료
+            alert('모든 레슨을 완료했습니다! 처음으로 돌아갑니다.');
+            currentLessonIndex = 0; 
+            currentStepIndex = 0;
+            currentLesson = allLessons[0];
+            updateStepContent();
+        }
     }
 }
 
@@ -222,7 +266,6 @@ function toggleHint() {
 
 // 7. 기물 스냅백 방지 (보드와 게임 상태 동기화)
 function onSnapEnd () {
-    // 애니메이션이 0ms이므로 즉시 동기화됩니다.
     board.position(game.fen());
 }
 
@@ -239,12 +282,12 @@ function updateStepContent() {
     
     currentStep = currentLesson.steps[currentStepIndex];
 
-    $('.chessboard-area h2').text(`[${currentStepIndex + 1}/${currentLesson.steps.length}] ${currentLesson.title} - ${currentStep.title}`);
+    $('.chessboard-area h2').text(`[${currentLesson.title} | ${currentStepIndex + 1}/${currentLesson.steps.length}] ${currentStep.title}`);
     
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
-    resetBoardForCleanup(); // ⭐️ 클린업
+    resetBoardForCleanup(); 
     squareToHighlight = null; 
 
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
@@ -253,7 +296,8 @@ function updateStepContent() {
     config.position = currentStep.fen;
     
     // 퍼즐(expectedMove)이 있을 때만 클릭으로 이동이 가능하게 설정
-    config.draggable = !!currentStep.expectedMove; 
+    // 좌표 퍼즐 (from === to)도 클릭이 필요하므로 draggable은 false 유지.
+    config.draggable = !!currentStep.expectedMove && currentStep.expectedMove.from !== currentStep.expectedMove.to; 
     
     // 기존 보드를 파괴하고 새 보드를 생성
     if (board) {
@@ -279,22 +323,25 @@ function updateStepContent() {
     if (currentStep.stepId === '2.2') {
         $('#next-step-btn').hide(); 
         
-        // ⭐️⭐️⭐️ 앙파상 셋업 로직 수정 ⭐️⭐️⭐️
         setTimeout(function() {
-            // FEN에 따라 다르지만, c7-c5가 흑의 합법적인 이동이라고 가정하고 game.move()를 사용합니다.
-            // game.move()는 FEN의 앙파상 타겟 필드를 자동으로 설정해줍니다.
+            // ⭐️ 앙파상 셋업 로직: game.move()로 FEN 업데이트 후 board.move()로 시각적 이동
+            
+            // 1. game.move()를 호출하여 FEN (앙파상 타겟)을 정확히 업데이트합니다.
             const move = game.move('c7c5'); 
             
             if (move) {
-                // 게임 객체 FEN이 업데이트 되었으므로, 보드에 반영합니다.
-                board.position(game.fen()); 
+                // 2. 시각적 움직임을 위해 board.move()를 호출합니다.
+                board.move('c7-c5');
+                
+                // 3. (안전을 위해) 보드의 최종 상태를 업데이트된 FEN에 맞춥니다.
+                board.position(game.fen());
             } else {
+                 // FEN이 흑의 턴이 아니거나 c7c5가 불법인 경우
                  console.error("En passant setup move c7c5 failed. Check initial FEN for Step 2.2 - it must be Black's turn and c7c5 must be legal.");
             }
 
             $status.html('흑이 C7에서 C5로 움직였습니다! 이제 D5 폰으로 앙파상을 시도하세요.');
         }, 1000); 
-        // ⭐️⭐️⭐️ 앙파상 셋업 로직 수정 완료 ⭐️⭐️⭐️
     }
 }
 
@@ -303,12 +350,18 @@ function updateStepContent() {
 $(document).ready(function() {
     
     $('#next-step-btn').on('click', loadNextStep);
+    $('#toggle-hint-btn').on('click', toggleHint);
     
-    // ⭐️ 오류 검증: currentLesson 변수의 존재 유무만 확인합니다.
-    if (typeof currentLesson === 'undefined' || !currentLesson.steps) {
-        $('#board').html('<p style="text-align: center; color: red;">체스보드 로드 실패: lessons.js 파일에 문제가 있습니다.</p>');
+    // ⭐️ 오류 검증: allLessons 변수의 존재 유무 및 currentLesson 초기화
+    if (typeof allLessons === 'undefined' || !Array.isArray(allLessons)) {
+        $('#board').html('<p style="text-align: center; color: red;">체스보드 로드 실패: lessons.js 파일에 문제가 있거나 allLessons 배열이 정의되지 않았습니다.</p>');
         $status.html("오류: 레슨 데이터를 찾을 수 없거나 형식이 잘못되었습니다.");
         return;
+    }
+    
+    // currentLesson이 초기화되어 있지 않으면 allLessons의 첫 번째 레슨으로 설정합니다.
+    if (typeof currentLesson === 'undefined' || !currentLesson) {
+        currentLesson = allLessons[0];
     }
 
     updateStepContent(); // 첫 단계 로드
@@ -324,9 +377,6 @@ $(document).ready(function() {
             console.error("Critical Error: Failed to determine square from DOM.");
         }
     });
-    
-    // 힌트 버튼 클릭 이벤트 연결
-    $('#toggle-hint-btn').on('click', toggleHint);
 
     $(window).on('resize', function() {
         if(board) board.resize();
