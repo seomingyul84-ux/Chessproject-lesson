@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (CSS Hide + Controlled Async 적용 버전)
+// main.js 파일 전체 코드 (DOM 제거 우회 적용 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -57,8 +57,13 @@ function highlightSquare (square, isTarget = false) {
     var $square = $('#board .square-' + square);
     
     if (isTarget) {
-        if($square.find('.move-dot').length === 0) { 
+        // 이미 .move-dot이 존재하면 숨김 속성을 제거하고 다시 보이게 합니다.
+        var $dot = $square.find('.move-dot');
+        if($dot.length === 0) { 
              $square.append('<div class="move-dot"></div>');
+        } else {
+             // ⭐️ 핵심 수정: 숨겨진 .move-dot을 다시 보이게 합니다.
+             $dot.css('display', ''); 
         }
     } 
     else {
@@ -66,23 +71,16 @@ function highlightSquare (square, isTarget = false) {
     }
 }
 
-// ⭐️ removeHighlights 함수 (시각적 즉시 처리 + 지연된 DOM 제거)
+// ⭐️ removeHighlights 함수 최종 수정 (느린 DOM 제거 작업 완전히 우회)
 function removeHighlights () {
     // 1. 하이라이트 클래스를 제거합니다.
     $('#board .square').removeClass('highlight-source highlight-target'); 
     
-    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 CSS를 통해 즉시 사라지게 합니다.
-    // 💡 사용자는 이 순간 클린업이 완료된 것처럼 느낍니다.
-    $('#board').addClass('hide-highlights'); 
+    // 2. 모든 .move-dot 요소를 즉시 숨깁니다.
+    // 💡 브라우저가 가장 싫어하는 DOM 제거(`.remove()`) 대신, CSS 변경(`.css()`)을 사용하여 부하를 줄입니다.
+    $('#board .square .move-dot').css('display', 'none'); 
     
-    // 3. .move-dot 요소를 DOM에서 제거하는 느린 작업은 50ms 후로 분리합니다.
-    // 이 작업이 느리게 실행되어도 이미 닷은 숨겨졌으므로 괜찮습니다.
-    setTimeout(function() {
-        $('#board .square .move-dot').remove();
-        
-        // 4. 숨김 클래스를 제거합니다. (다음 하이라이트를 위해)
-        $('#board').removeClass('hide-highlights');
-    }, 50); // 50ms의 짧은 지연을 주어 메인 스레드에 부담을 덜어줍니다.
+    // 이 방식은 setTimeout을 사용할 필요가 없으며, 모두 동기적으로 실행됩니다.
 }
 
 
@@ -92,7 +90,7 @@ function handleSquareClick(square) {
     if (squareToHighlight === null) {
         if (game.get(square) && game.get(square).color === game.turn()) {
             squareToHighlight = square;
-            // ⭐️ 클린업을 먼저 실행 (이전 선택 잔재 제거)
+            // ⭐️ 클린업
             removeHighlights(); 
             
             highlightSquare(square);
