@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (닷 즉시 숨김 적용 버전)
+// main.js 파일 전체 코드 (이동 시 보드 강제 리셋 적용 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -66,22 +66,24 @@ function highlightSquare (square, isTarget = false) {
     // 선택된 기물 칸의 배경색 하이라이트는 제거되었습니다.
 }
 
-// ⭐️ removeHighlights 함수: 시각적 즉시 처리 + 지연된 DOM 제거 유지
+// ⭐️ removeHighlights 함수 제거 (보드 리셋으로 대체)
 function removeHighlights () {
-    // 1. 이전 대상 칸의 하이라이트 클래스만 제거합니다.
+    // 이 함수는 더 이상 사용하지 않습니다.
     $('#board .square').removeClass('highlight-target'); 
-    
-    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 CSS를 통해 즉시 사라지게 합니다.
-    // 💡 이 작업은 handleSquareClick에서도 처리되지만, 안전을 위해 여기서도 수행합니다.
-    $('#board').addClass('hide-highlights'); 
-    
-    // 3. 느린 DOM 제거 작업은 50ms 후로 분리합니다. (여전히 3초 지연이 발생할 수 있는 부분)
-    setTimeout(function() {
-        $('#board .square .move-dot').remove(); 
-        
-        // 4. 숨김 클래스를 제거합니다.
-        $('#board').removeClass('hide-highlights');
-    }, 50); 
+    $('#board').removeClass('hide-highlights'); 
+    $('#board .square .move-dot').remove(); 
+}
+
+// ⭐️ 보드 리셋 클린업 함수 (강제 새로고침)
+function resetBoardForCleanup() {
+    // 1. 기존 보드 파괴
+    if (board) {
+        board.destroy();
+    }
+    // 2. 현재 게임 FEN으로 보드를 즉시 다시 그립니다.
+    config.position = game.fen();
+    board = Chessboard('board', config);
+    // 3. FEN 변경 사항이 없으므로 game 객체는 유지합니다.
 }
 
 
@@ -89,15 +91,17 @@ function removeHighlights () {
 function handleSquareClick(square) {
     // 1. 현재 선택된 기물이 없음 (새로운 기물 선택 시도)
     if (squareToHighlight === null) {
+        // ⭐️ 기존 하이라이트/닷 제거
+        removeHighlights();
+        
         if (game.get(square) && game.get(square).color === game.turn()) {
             squareToHighlight = square;
-            removeHighlights(); 
             
             highlightSquare(square); 
             
             var moves = game.moves({ square: square, verbose: true });
             for (var i = 0; i < moves.length; i++) {
-                highlightSquare(moves[i].to, true); 
+                highlightSquare(moves[i].to, true); // 이동 가능한 칸에 점 찍기
             }
         }
     } 
@@ -115,24 +119,20 @@ function handleSquareClick(square) {
         var source = squareToHighlight;
         var target = square;
         
-        // ⭐️⭐️⭐️ 중요 수정 영역 시작 ⭐️⭐️⭐️
+        // ⭐️⭐️⭐️ 중요 수정 영역 시작 (이동 시 보드 리셋) ⭐️⭐️⭐️
         
         // 1. 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
-                // 💡 이동 성공 직후, 지연 없이 닷을 즉시 숨깁니다.
-                $('#board').addClass('hide-highlights'); 
-                
-                board.move(source + '-' + target); 
+                // 💡 이동 성공 시:
+                board.move(source + '-' + target); // 체스보드 애니메이션 (0ms)
                 squareToHighlight = null; 
+                resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋하여 잔상을 즉시 제거합니다. ⭐️⭐️
             } else {
                 board.position(game.fen()); 
             }
-            
-            // 클린업 함수는 비동기 DOM 제거를 담당합니다.
-            removeHighlights(); 
             return; 
         }
         
@@ -152,13 +152,9 @@ function handleSquareClick(square) {
         }
 
         // 3. 유효한 이동인 경우
-        // 💡 이동 성공 직후, 지연 없이 닷을 즉시 숨깁니다.
-        $('#board').addClass('hide-highlights'); 
-        
         board.move(source + '-' + target);
         
-        // 클린업 함수는 비동기 DOM 제거를 담당합니다.
-        removeHighlights(); 
+        resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋하여 잔상을 즉시 제거합니다. ⭐️⭐️
         
         squareToHighlight = null; 
         
@@ -206,7 +202,7 @@ function loadNextStep() {
     currentStepIndex++;
     
     if (currentStepIndex < currentLesson.steps.length) {
-        removeHighlights(); // ⭐️ 클린업
+        resetBoardForCleanup(); // ⭐️ 클린업
         squareToHighlight = null; 
         updateStepContent(); 
     } else {
@@ -245,7 +241,7 @@ function updateStepContent() {
     $lessonDesc.html(currentStep.description); 
     $hintText.html(currentStep.hint);
     
-    removeHighlights(); // ⭐️ 클린업
+    resetBoardForCleanup(); // ⭐️ 클린업
     squareToHighlight = null; 
 
     $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
