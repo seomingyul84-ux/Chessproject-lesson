@@ -7,7 +7,7 @@ const allLessons = [
     // =========================================
     {
         lessonId: 'basics',
-        title: "1. 체스의 기본 (행마 및 용어)",
+        title: "",
         steps: [
             // 1단계: 기본 세팅 및 좌표 (이론)
             {
@@ -250,9 +250,9 @@ const allLessons = [
                 fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 
                 description: `
                     <p>블런더 (Blunder): 게임의 결과가 뒤바뀔 정도의 심각한 실수를 뜻합니다. (최악의 수)</p>
-                    <p>갬빗 (Gambit): 오프닝에서 주로 폰을 희생하고 더 좋은 포지션이나 빠른 발전을 차지하는 전략입니다. (예: 킹스 갬빗) </p>
+                    <p>갬빗 (Gambit): 오프닝에서 주로 폰을 희생하고 더 좋은 포지션이나 빠른 전개를를 차지하는 전략입니다. (예: 킹스 갬빗) </p>
                 `,
-                hint: '퀸은 모든 방향으로 이동 가능하며, 킹은 안전이 최우선입니다.',
+                hint: '용어 설명이기 때문에 특별한 힌트는 없습니다. 좋은 하루 되세요!',
                 expectedMove: null
             }
         ]
