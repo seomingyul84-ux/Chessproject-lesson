@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (배경색 하이라이트 제거 버전)
+// main.js 파일 전체 코드 (닷 즉시 숨김 적용 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -63,18 +63,19 @@ function highlightSquare (square, isTarget = false) {
              $square.append('<div class="move-dot"></div>');
         } 
     } 
-    // ⭐️ 선택된 기물 칸에 배경색 하이라이트를 추가하는 로직(else 블록)을 제거했습니다.
+    // 선택된 기물 칸의 배경색 하이라이트는 제거되었습니다.
 }
 
-// ⭐️ removeHighlights 함수: 배경색 제거 로직 간소화
+// ⭐️ removeHighlights 함수: 시각적 즉시 처리 + 지연된 DOM 제거 유지
 function removeHighlights () {
     // 1. 이전 대상 칸의 하이라이트 클래스만 제거합니다.
     $('#board .square').removeClass('highlight-target'); 
     
     // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 CSS를 통해 즉시 사라지게 합니다.
+    // 💡 이 작업은 handleSquareClick에서도 처리되지만, 안전을 위해 여기서도 수행합니다.
     $('#board').addClass('hide-highlights'); 
     
-    // 3. 느린 DOM 제거 작업은 50ms 후로 분리합니다.
+    // 3. 느린 DOM 제거 작업은 50ms 후로 분리합니다. (여전히 3초 지연이 발생할 수 있는 부분)
     setTimeout(function() {
         $('#board .square .move-dot').remove(); 
         
@@ -90,14 +91,13 @@ function handleSquareClick(square) {
     if (squareToHighlight === null) {
         if (game.get(square) && game.get(square).color === game.turn()) {
             squareToHighlight = square;
-            // ⭐️ 클린업
             removeHighlights(); 
             
-            highlightSquare(square); // 선택된 기물은 하이라이트하지 않음 (점은 안 찍힘)
+            highlightSquare(square); 
             
             var moves = game.moves({ square: square, verbose: true });
             for (var i = 0; i < moves.length; i++) {
-                highlightSquare(moves[i].to, true); // 이동 가능한 칸에 점 찍기
+                highlightSquare(moves[i].to, true); 
             }
         }
     } 
@@ -106,7 +106,6 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
-            // ⭐️ 클린업
             removeHighlights(); 
             squareToHighlight = null;
             return;
@@ -116,23 +115,28 @@ function handleSquareClick(square) {
         var source = squareToHighlight;
         var target = square;
         
-        // 퍼즐 모드인 경우 onDrop 로직 재활용
+        // ⭐️⭐️⭐️ 중요 수정 영역 시작 ⭐️⭐️⭐️
+        
+        // 1. 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
+                // 💡 이동 성공 직후, 지연 없이 닷을 즉시 숨깁니다.
+                $('#board').addClass('hide-highlights'); 
+                
                 board.move(source + '-' + target); 
                 squareToHighlight = null; 
             } else {
                 board.position(game.fen()); 
             }
             
-            // ⭐️ 클린업
+            // 클린업 함수는 비동기 DOM 제거를 담당합니다.
             removeHighlights(); 
             return; 
         }
         
-        // 일반 모드 이동
+        // 2. 일반 모드 이동
         var move = game.move({ from: source, to: target, promotion: 'q' });
 
         if (move === null) {
@@ -140,7 +144,6 @@ function handleSquareClick(square) {
             
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
-                // ⭐️ 클린업
                 removeHighlights(); 
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
@@ -148,16 +151,21 @@ function handleSquareClick(square) {
             return;
         }
 
-        // 유효한 이동인 경우
+        // 3. 유효한 이동인 경우
+        // 💡 이동 성공 직후, 지연 없이 닷을 즉시 숨깁니다.
+        $('#board').addClass('hide-highlights'); 
+        
         board.move(source + '-' + target);
         
-        // ⭐️ 클린업
+        // 클린업 함수는 비동기 DOM 제거를 담당합니다.
         removeHighlights(); 
         
         squareToHighlight = null; 
         
         $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
         $status.html(`성공적으로 수를 두었습니다: ${move.san}. 다른 행마도 테스트해보세요.`);
+        
+        // ⭐️⭐️⭐️ 중요 수정 영역 끝 ⭐️⭐️⭐️
     }
 }
 
