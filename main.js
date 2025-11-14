@@ -1,4 +1,4 @@
-// main.js 파일 전체 코드 (이동 시 보드 강제 리셋 적용 버전)
+// main.js 파일 전체 코드 (앙파상 셋업 로직 수정 버전)
 
 // 1. 초기 설정 및 DOM 요소 캐시
 var board = null;
@@ -63,18 +63,25 @@ function highlightSquare (square, isTarget = false) {
              $square.append('<div class="move-dot"></div>');
         } 
     } 
-    // 선택된 기물 칸의 배경색 하이라이트는 제거되었습니다.
+    // 배경색 하이라이트는 제거되었습니다.
 }
 
-// ⭐️ removeHighlights 함수 제거 (보드 리셋으로 대체)
-function removeHighlights () {
-    // 이 함수는 더 이상 사용하지 않습니다.
+// ⭐️ 닷 즉시 숨김 함수 (선택 해제 시 사용)
+function instantHideDots() {
+    // 1. 하이라이트 잔상 방지를 위해 .highlight-target 클래스는 여전히 제거합니다.
     $('#board .square').removeClass('highlight-target'); 
-    $('#board').removeClass('hide-highlights'); 
-    $('#board .square .move-dot').remove(); 
+    
+    // 2. 보드 전체에 숨김 클래스를 추가하여 .move-dot 요소가 CSS를 통해 즉시 사라지게 합니다.
+    $('#board').addClass('hide-highlights'); 
+    
+    // 3. (옵션) 비동기적으로 느리게 DOM 제거를 시도합니다. (선택 해제 시에만 적용)
+    setTimeout(function() {
+        $('#board .square .move-dot').remove(); 
+        $('#board').removeClass('hide-highlights');
+    }, 50); 
 }
 
-// ⭐️ 보드 리셋 클린업 함수 (강제 새로고침)
+// ⭐️ 보드 리셋 클린업 함수 (강제 새로고침 - 이동 시 사용)
 function resetBoardForCleanup() {
     // 1. 기존 보드 파괴
     if (board) {
@@ -83,7 +90,6 @@ function resetBoardForCleanup() {
     // 2. 현재 게임 FEN으로 보드를 즉시 다시 그립니다.
     config.position = game.fen();
     board = Chessboard('board', config);
-    // 3. FEN 변경 사항이 없으므로 game 객체는 유지합니다.
 }
 
 
@@ -91,8 +97,8 @@ function resetBoardForCleanup() {
 function handleSquareClick(square) {
     // 1. 현재 선택된 기물이 없음 (새로운 기물 선택 시도)
     if (squareToHighlight === null) {
-        // ⭐️ 기존 하이라이트/닷 제거
-        removeHighlights();
+        // ⭐️ 새로운 선택 시도 전, 이전 잔상 제거 (resetBoardForCleanup이 아닌 instantHideDots 사용)
+        instantHideDots();
         
         if (game.get(square) && game.get(square).color === game.turn()) {
             squareToHighlight = square;
@@ -110,7 +116,8 @@ function handleSquareClick(square) {
     else {
         // a) 선택된 기물을 다시 클릭 (선택 해제)
         if (squareToHighlight === square) {
-            removeHighlights(); 
+            // ⭐️ 선택 해제는 가장 빨라야 함: 닷 즉시 숨김만 사용
+            instantHideDots(); 
             squareToHighlight = null;
             return;
         }
@@ -119,17 +126,15 @@ function handleSquareClick(square) {
         var source = squareToHighlight;
         var target = square;
         
-        // ⭐️⭐️⭐️ 중요 수정 영역 시작 (이동 시 보드 리셋) ⭐️⭐️⭐️
-        
         // 1. 퍼즐 모드인 경우 onDrop 로직 재활용
         if (currentStep && currentStep.expectedMove) {
             const result = onDrop(source, target);
             
             if (result !== 'snapback') {
                 // 💡 이동 성공 시:
-                board.move(source + '-' + target); // 체스보드 애니메이션 (0ms)
+                board.move(source + '-' + target); 
                 squareToHighlight = null; 
-                resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋하여 잔상을 즉시 제거합니다. ⭐️⭐️
+                resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋 (이동 시 최종 해결책) ⭐️⭐️
             } else {
                 board.position(game.fen()); 
             }
@@ -144,7 +149,7 @@ function handleSquareClick(square) {
             
             // 유효하지 않은 이동인 경우, 현재 턴의 기물을 클릭했다면 선택 변경
             if (game.get(square) && game.get(square).color === game.turn()) {
-                removeHighlights(); 
+                instantHideDots(); // 닷 즉시 숨김
                 squareToHighlight = null; 
                 handleSquareClick(square); // 선택 변경을 위해 재귀 호출
             } 
@@ -154,14 +159,12 @@ function handleSquareClick(square) {
         // 3. 유효한 이동인 경우
         board.move(source + '-' + target);
         
-        resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋하여 잔상을 즉시 제거합니다. ⭐️⭐️
+        resetBoardForCleanup(); // ⭐️⭐️ 보드를 강제로 리셋 (이동 시 최종 해결책) ⭐️⭐️
         
         squareToHighlight = null; 
         
         $feedbackPanel.removeClass('feedback-correct feedback-incorrect');
         $status.html(`성공적으로 수를 두었습니다: ${move.san}. 다른 행마도 테스트해보세요.`);
-        
-        // ⭐️⭐️⭐️ 중요 수정 영역 끝 ⭐️⭐️⭐️
     }
 }
 
@@ -276,18 +279,22 @@ function updateStepContent() {
     if (currentStep.stepId === '2.2') {
         $('#next-step-btn').hide(); 
         
+        // ⭐️⭐️⭐️ 앙파상 셋업 로직 수정 ⭐️⭐️⭐️
         setTimeout(function() {
-            // 흑이 폰을 2칸 전진 (c7-c5)
-            board.move('c7-c5');
+            // FEN에 따라 다르지만, c7-c5가 흑의 합법적인 이동이라고 가정하고 game.move()를 사용합니다.
+            // game.move()는 FEN의 앙파상 타겟 필드를 자동으로 설정해줍니다.
+            const move = game.move('c7c5'); 
             
-            // FEN 업데이트: 앙파상으로 잡을 수 있는 상태로 변경 (c6에 앙파상 타겟)
-            // '8/8/8/2pP4/8/8/8/K7 w - c6 0 2'
-            const enPassantFen = game.fen();
-            game.load(enPassantFen); 
-            board.position(enPassantFen); 
+            if (move) {
+                // 게임 객체 FEN이 업데이트 되었으므로, 보드에 반영합니다.
+                board.position(game.fen()); 
+            } else {
+                 console.error("En passant setup move c7c5 failed. Check initial FEN for Step 2.2 - it must be Black's turn and c7c5 must be legal.");
+            }
 
             $status.html('흑이 C7에서 C5로 움직였습니다! 이제 D5 폰으로 앙파상을 시도하세요.');
         }, 1000); 
+        // ⭐️⭐️⭐️ 앙파상 셋업 로직 수정 완료 ⭐️⭐️⭐️
     }
 }
 
