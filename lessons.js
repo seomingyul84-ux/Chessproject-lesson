@@ -318,7 +318,7 @@ const allLessons = [
                 stepId: '3.1.1',
                 title: '1단계: 킹: 한 칸의 움직임',
                 fen: '8/8/8/4K3/8/8/8/8 w - - 0 1', // E5에 킹만 배치
-                description: '킹은 모든 방향(수평, 수직, 대각선)으로 **단 한 칸**만 움직일 수 있습니다. 킹은 잡히거나 체크를 당하는 곳으로 이동할 수 없습니다.',
+                description: '킹은 모든 방향(수평, 수직, 대각선)으로 단 한 칸만 움직일 수 있습니다. 킹은 잡히거나 체크를 당하는 곳으로 이동할 수 없습니다.',
                 hint: '킹이 E5에서 이동 가능한 8칸을 확인해 보세요.',
                 expectedMove: null // 이론 단계
             },
@@ -326,10 +326,10 @@ const allLessons = [
             {
                 stepId: '3.1.2',
                 title: '2단계: 퍼즐: 킹을 안전한 곳으로',
-                fen: '7k/8/8/4Q3/8/8/8/4K3 w - - 0 1', // H8 흑 킹, E5 백 퀸, E1 백 킹. 백 턴.
-                description: '백 킹이 E5의 퀸의 공격으로부터 안전하게 이동할 수 있는 칸(D1)으로 움직여 체크를 피하세요.',
-                hint: 'D1 또는 F1으로 이동하세요.',
-                expectedMove: { from: 'e1', to: 'd1' }
+                fen: 'r1bq3r/pppp1kpp/8/8/1n1Pn3/1Q3N2/PP3PPP/RN2K2R w KQ - 0 1', 
+                description: '흑 킹이 b3의 퀸의 공격으로부터 안전하게 이동할 수 있는 칸(f8)으로 움직여 체크를 피하세요.',
+                hint: 'F8로 이동하세요.',
+                expectedMove: { from: 'f7', to: 'f8' }
             }
         ]
     },
