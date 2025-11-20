@@ -41,7 +41,7 @@ const allLessons = [
                 stepId: '1.0.2.B',
                 title: '3단계: 좌표 퍼즐 (G7 찾기)',
                 fen: '8/8/8/8/8/8/8/8 w - - 0 1',
-                description: '체스보드에서 **g7** 칸을 클릭하여 선택하세요.',
+                description: '체스보드에서 g7 칸을 클릭하여 선택하세요.',
                 hint: 'G 파일과 7랭크가 만나는 곳입니다.',
                 expectedMove: { from: 'g7', to: 'g7' } // ⭐️ 좌표 퍼즐 (from === to)
             },
@@ -258,7 +258,7 @@ const allLessons = [
                 stepId: '1.0.3.A',
                 title: "23단계: 용어 정리 (1) - 체크메이트 테스트",
                 fen: 'rnbqkbnr/pppp1ppp/8/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 2', 
-                description: `<p>체크메이트 (#): 킹이 잡힐 상황(체크)을 피할 수 없을 때 발생하며, 게임이 즉시 종료됩니다. 흰색 퀸(H5)을 F7 폰이 있는 곳으로 움직여 체크메이트를 시도해보세요. (이 오프닝은 'Fool\'s Mate'입니다.)</p>`,
+                description: `<p>체크메이트 (#): 킹이 잡힐 상황(체크)을 피할 수 없을 때 발생하며, 게임이 즉시 종료됩니다. 흰색 퀸(H5)을 F7 폰이 있는 곳으로 움직여 체크메이트를 시도해보세요. (이 오프닝은 'Scholar\'s Mate'즉 스콜라 메이트 혹은 웨이워드 퀸 어택이라고 불립니다.)</p>`,
                 hint: 'H5 퀸을 F7로 움직여 흑 킹을 공격하세요.',
                 expectedMove: { from: 'h5', to: 'f7' }
             },
@@ -290,7 +290,7 @@ const allLessons = [
                 stepId: '2.1.1',
                 title: '1단계: 퀸: 체스판의 지배자',
                 fen: '8/8/8/4Q3/8/8/8/8 w - - 0 1', // E5에 퀸만 배치
-                description: '퀸은 **룩**과 **비숍**의 움직임을 모두 합친 가장 강력한 기물입니다. 수평, 수직, 대각선 방향으로 칸 수 제한 없이 이동할 수 있습니다.',
+                description: '퀸은 룩과 비숍의 움직임을 모두 합친 가장 강력한 기물입니다. 수평, 수직, 대각선 방향으로 칸 수 제한 없이 이동할 수 있습니다.',
                 hint: '체스판에서 퀸이 이동할 수 있는 모든 방향을 확인해 보세요. (8방향)',
                 expectedMove: null // 이론 단계
             },
@@ -327,7 +327,7 @@ const allLessons = [
                 stepId: '3.1.2',
                 title: '2단계: 퍼즐: 킹을 안전한 곳으로',
                 fen: '7k/8/8/4Q3/8/8/8/4K3 w - - 0 1', // H8 흑 킹, E5 백 퀸, E1 백 킹. 백 턴.
-                description: '백 킹이 E5의 퀸의 공격으로부터 안전하게 이동할 수 있는 칸(D1 또는 F1)으로 움직여 체크를 피하세요.',
+                description: '백 킹이 E5의 퀸의 공격으로부터 안전하게 이동할 수 있는 칸(D1)으로 움직여 체크를 피하세요.',
                 hint: 'D1 또는 F1으로 이동하세요.',
                 expectedMove: { from: 'e1', to: 'd1' }
             }
@@ -355,7 +355,7 @@ const allLessons = [
                 stepId: '4.1.2',
                 title: '2단계: 좌표 퍼즐 (B5 찾기)',
                 fen: '8/8/8/8/8/8/8/8 w - - 0 1',
-                description: '체스보드에서 **b5** 칸을 클릭하여 선택하세요.',
+                description: '체스보드에서 b5 칸을 클릭하여 선택하세요.',
                 hint: 'B 파일과 5랭크가 만나는 곳입니다.',
                 expectedMove: { from: 'b5', to: 'b5' }
             }
