@@ -326,10 +326,10 @@ const allLessons = [
             {
                 stepId: '3.1.2',
                 title: '2단계: 퍼즐: 킹을 안전한 곳으로',
-                fen: 'r1bq3r/pppp1kpp/8/8/1n1Pn3/1Q3N2/PP3PPP/RN2K2R b KQ - 0 1', 
-                description: '흑 킹이 b3의 퀸의 공격으로부터 안전하게 이동할 수 있는 칸(f8)으로 움직여 체크를 피하세요.',
+                fen: 'rnb1kbnr/pppp1ppp/8/8/2B1Pp1q/8/PPPP2PP/RNBQK1NR w KQkq - 0 1', 
+                description: '백 킹이 h4의 흑 퀸의 공격으로부터 안전하게 이동할 수 있는 칸(f1)으로 움직여 체크를 피하세요.',
                 hint: 'F8로 이동하세요.',
-                expectedMove: { from: 'f7', to: 'f8' }
+                expectedMove: { from: 'e1', to: 'f1' }
             }
         ]
     },
